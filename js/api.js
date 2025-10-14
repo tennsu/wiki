@@ -1,61 +1,34 @@
 // js/api.js
-const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+// あなたのSupabaseプロジェクト情報を設定
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
 const SUPABASE_KEY = "YOUR_PUBLIC_ANON_KEY";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 一覧取得
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// 記事一覧取得
 export async function getArticles() {
-  const { data, error } = await supabase
-    .from("articles")
-    .select("id, title, description, updated_at")
-    .order("updated_at", { ascending: false });
+  const { data, error } = await supabase.from("articles").select("*").order("updated_at", { ascending: false });
   if (error) throw error;
   return data;
 }
 
-// 記事1件取得
+// 記事取得
 export async function getArticle(title) {
-  const { data, error } = await supabase
-    .from("articles")
-    .select("*")
-    .eq("title", title)
-    .single();
+  const { data, error } = await supabase.from("articles").select("*").eq("title", title).single();
   if (error) throw error;
   return data;
 }
 
-// 作成
-export async function createArticle(article) {
-  const { error } = await supabase.from("articles").insert([
-    {
-      title: article.title,
-      description: article.description,
-      markdown: article.markdown,
-      infobox: article.infobox || {},
-    },
-  ]);
+// 記事追加
+export async function addArticle(article) {
+  const { error } = await supabase.from("articles").insert([article]);
   if (error) throw error;
-  return true;
 }
 
-// 更新
-export async function updateArticle(title, article) {
-  const { error } = await supabase
-    .from("articles")
-    .update({
-      description: article.description,
-      markdown: article.markdown,
-      infobox: article.infobox || {},
-      updated_at: new Date().toISOString(),
-    })
-    .eq("title", title);
+// 記事更新
+export async function updateArticle(title, data) {
+  const { error } = await supabase.from("articles").update(data).eq("title", title);
   if (error) throw error;
-  return true;
-}
-
-// 削除
-export async function deleteArticle(title) {
-  const { error } = await supabase.from("articles").delete().eq("title", title);
-  if (error) throw error;
-  return true;
 }
