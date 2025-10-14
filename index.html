@@ -31,10 +31,6 @@
       margin: auto;
     }
 
-    section {
-      margin-bottom: 2rem;
-    }
-
     input[type="text"] {
       width: 100%;
       padding: 0.6rem;
@@ -50,7 +46,7 @@
       padding: 0;
     }
 
-    .article-list li {
+    .article-item {
       margin: 0.8rem 0;
       background-color: #fff;
       padding: 0.6rem 1rem;
@@ -59,7 +55,7 @@
       transition: 0.2s;
     }
 
-    .article-list li:hover {
+    .article-item:hover {
       background-color: #f0f7ff;
       border-color: #bcd3f7;
     }
@@ -87,26 +83,16 @@
 <body>
   <header>
     <h1>My Wiki</h1>
-    <p>知識を整理し、共有するための小さなWikiサイト</p>
+    <p>知識を整理し、共有するためのWiki</p>
   </header>
 
   <main>
-    <section>
-      <h2>概要</h2>
-      <p>ここではさまざまなトピックに関する記事をまとめています。興味のあるテーマを選んでご覧ください。</p>
-    </section>
+    <h2>記事検索</h2>
+    <input type="text" id="searchBar" placeholder="キーワードを入力..." />
 
-    <section>
-      <h2>記事検索</h2>
-      <input type="text" id="searchBar" placeholder="キーワードで検索..." />
-      <ul class="article-list" id="articleList">
-        <li><a href="article.html?title=ChatGPT">ChatGPTとは</a></li>
-        <li><a href="article.html?title=JavaScript">JavaScriptの基礎</a></li>
-        <li><a href="article.html?title=HTML">HTML入門</a></li>
-        <li><a href="article.html?title=CSS">CSSの基本</a></li>
-        <li><a href="article.html?title=AI">AIの歴史と応用</a></li>
-      </ul>
-    </section>
+    <ul class="article-list" id="articleList">
+      <li>読み込み中...</li>
+    </ul>
   </main>
 
   <footer>
@@ -114,18 +100,48 @@
   </footer>
 
   <script>
-    // 検索バー機能
     const searchBar = document.getElementById("searchBar");
     const articleList = document.getElementById("articleList");
-    const articles = articleList.getElementsByTagName("li");
+    let articles = [];
 
+    // JSONから記事を読み込む
+    fetch("articles.json")
+      .then(res => res.json())
+      .then(data => {
+        articles = data;
+        renderArticles(articles);
+      })
+      .catch(() => {
+        articleList.innerHTML = "<li>記事を読み込めませんでした。</li>";
+      });
+
+    // 記事一覧を描画
+    function renderArticles(list) {
+      articleList.innerHTML = "";
+      if (list.length === 0) {
+        articleList.innerHTML = "<li>該当する記事がありません。</li>";
+        return;
+      }
+
+      list.forEach(article => {
+        const li = document.createElement("li");
+        li.className = "article-item";
+        li.innerHTML = `
+          <a href="article.html?title=${encodeURIComponent(article.title)}">${article.title}</a>
+          <p>${article.description}</p>
+        `;
+        articleList.appendChild(li);
+      });
+    }
+
+    // 検索機能
     searchBar.addEventListener("input", () => {
       const query = searchBar.value.toLowerCase();
-
-      for (let article of articles) {
-        const text = article.textContent.toLowerCase();
-        article.style.display = text.includes(query) ? "" : "none";
-      }
+      const filtered = articles.filter(a =>
+        a.title.toLowerCase().includes(query) ||
+        a.description.toLowerCase().includes(query)
+      );
+      renderArticles(filtered);
     });
   </script>
 </body>
