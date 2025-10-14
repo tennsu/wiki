@@ -3,146 +3,138 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Wiki - ホーム</title>
+  <title>My Wiki ホーム</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="js/api.js"></script>
+
   <style>
     body {
       font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
       background-color: #f8f9fa;
-      color: #202122;
       margin: 0;
-      line-height: 1.6;
+      color: #222;
     }
-
     header {
-      background-color: #eaecf0;
+      background: #eaecf0;
       padding: 1rem 2rem;
-      border-bottom: 1px solid #a2a9b1;
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
     }
-
     header h1 {
+      font-size: 1.2rem;
       margin: 0;
-      font-size: 2rem;
     }
-
     main {
-      padding: 2rem;
       max-width: 900px;
       margin: auto;
+      padding: 2rem;
     }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 0.6rem;
-      font-size: 1rem;
-      border: 1px solid #a2a9b1;
-      border-radius: 6px;
-      box-sizing: border-box;
+    .search-bar {
+      display: flex;
+      gap: 0.5rem;
       margin-bottom: 1rem;
     }
-
-    .article-list {
-      list-style: none;
-      padding: 0;
-    }
-
-    .article-item {
-      margin: 0.8rem 0;
-      background-color: #fff;
-      padding: 0.6rem 1rem;
+    input[type="search"] {
+      flex: 1;
+      padding: 0.6rem;
+      font-size: 1rem;
       border-radius: 6px;
-      border: 1px solid #e0e0e0;
+      border: 1px solid #ccc;
+    }
+    article {
+      background: white;
+      margin-bottom: 1rem;
+      padding: 1rem 1.2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
       transition: 0.2s;
     }
-
-    .article-item:hover {
-      background-color: #f0f7ff;
-      border-color: #bcd3f7;
+    article:hover {
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-
-    a {
-      color: #0645ad;
-      text-decoration: none;
-      font-weight: 500;
+    article h2 {
+      margin: 0;
+      font-size: 1.1rem;
     }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
     footer {
-      margin-top: 3rem;
-      padding-top: 1rem;
-      border-top: 1px solid #a2a9b1;
-      font-size: 0.9rem;
-      color: #555;
       text-align: center;
+      margin: 3rem 0 1rem;
+      color: #666;
+      font-size: 0.9rem;
+    }
+    .new-article {
+      margin-bottom: 1rem;
+      text-align: right;
+    }
+    .new-article a {
+      background: #4caf50;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      text-decoration: none;
     }
   </style>
 </head>
+
 <body>
   <header>
     <h1>My Wiki</h1>
-    <p>知識を整理し、共有するためのWiki</p>
   </header>
 
   <main>
-    <h2>記事検索</h2>
-    <input type="text" id="searchBar" placeholder="キーワードを入力..." />
+    <div class="new-article">
+      <a href="new.html">＋ 新規作成</a>
+    </div>
 
-    <ul class="article-list" id="articleList">
-      <li>読み込み中...</li>
-    </ul>
+    <div class="search-bar">
+      <input type="search" id="searchInput" placeholder="記事を検索..." />
+    </div>
+
+    <div id="articleList">
+      <p>読み込み中...</p>
+    </div>
   </main>
 
   <footer>
     <p>&copy; 2025 My Wiki</p>
   </footer>
 
-  <script>
-    const searchBar = document.getElementById("searchBar");
-    const articleList = document.getElementById("articleList");
+  <script type="module">
+    import { getArticles } from "./js/api.js";
+
+    const listContainer = document.getElementById("articleList");
+    const searchInput = document.getElementById("searchInput");
     let articles = [];
 
-    // JSONから記事を読み込む
-    fetch("articles.json")
-      .then(res => res.json())
-      .then(data => {
-        articles = data;
-        renderArticles(articles);
-      })
-      .catch(() => {
-        articleList.innerHTML = "<li>記事を読み込めませんでした。</li>";
-      });
-
-    // 記事一覧を描画
-    function renderArticles(list) {
-      articleList.innerHTML = "";
-      if (list.length === 0) {
-        articleList.innerHTML = "<li>該当する記事がありません。</li>";
-        return;
+    async function loadArticles() {
+      try {
+        articles = await getArticles();
+        renderList(articles);
+      } catch (e) {
+        listContainer.innerHTML = "<p>記事の読み込みに失敗しました。</p>";
+        console.error(e);
       }
-
-      list.forEach(article => {
-        const li = document.createElement("li");
-        li.className = "article-item";
-        li.innerHTML = `
-          <a href="article.html?title=${encodeURIComponent(article.title)}">${article.title}</a>
-          <p>${article.description}</p>
-        `;
-        articleList.appendChild(li);
-      });
     }
 
-    // 検索機能
-    searchBar.addEventListener("input", () => {
-      const query = searchBar.value.toLowerCase();
-      const filtered = articles.filter(a =>
-        a.title.toLowerCase().includes(query) ||
-        a.description.toLowerCase().includes(query)
-      );
-      renderArticles(filtered);
+    function renderList(items) {
+      listContainer.innerHTML = items.map(article => `
+        <article>
+          <h2><a href="article.html?title=${encodeURIComponent(article.title)}">${article.title}</a></h2>
+          <p>${article.description || ""}</p>
+          <small>更新: ${new Date(article.updated_at).toLocaleDateString()}</small>
+        </article>
+      `).join("");
+    }
+
+    searchInput.addEventListener("input", e => {
+      const q = e.target.value.toLowerCase();
+      const filtered = articles.filter(a => a.title.toLowerCase().includes(q));
+      renderList(filtered);
     });
+
+    loadArticles();
   </script>
 </body>
 </html>
