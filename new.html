@@ -1,197 +1,78 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>新規記事作成 - My Wiki</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>記事を作成 - My Wiki</title>
 
-  <!-- Supabase / Marked -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script type="module" src="js/api.js"></script>
 
   <style>
-    body {
-      font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
-      background: #f8f9fa;
-      margin: 0;
-      color: #222;
-    }
-    header {
-      background: #eaecf0;
-      padding: 1rem 2rem;
-      border-bottom: 1px solid #ccc;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    header a {
-      color: #007bff;
-      text-decoration: none;
-    }
-    main {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      padding: 1.5rem;
-      max-width: 1200px;
-      margin: auto;
-    }
-    .form-fields {
-      grid-column: span 2;
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-    input[type="text"] {
-      flex: 1;
-      padding: 0.6rem;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
-    }
-    textarea {
-      width: 100%;
-      height: 60vh;
-      padding: 1rem;
-      font-family: monospace;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      resize: vertical;
-      background: white;
-    }
-    .preview {
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 1rem;
-      overflow-y: auto;
-      height: 60vh;
-    }
-    button {
-      padding: 0.6rem 1.2rem;
-      border: none;
-      border-radius: 6px;
-      background: #4caf50;
-      color: white;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button:hover {
-      background: #388e3c;
-    }
-    .infobox-container {
-      grid-column: span 2;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-    .infobox-preview {
-      background: #f0f0f0;
-      padding: 1rem;
-      border-radius: 8px;
-      font-size: 0.9rem;
-    }
-    .infobox-preview table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .infobox-preview th, .infobox-preview td {
-      border-bottom: 1px solid #ccc;
-      padding: 0.3rem;
-    }
+    body { font-family: "Hiragino Sans", "Meiryo", sans-serif; margin: 0; background: #f8f9fa; }
+    main { max-width: 900px; margin: auto; padding: 2rem; }
+    input, textarea { width: 100%; margin-bottom: 1rem; padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc; }
+    button { padding: 0.6rem 1rem; border: none; border-radius: 6px; background: #007bff; color: white; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .preview img { max-width: 200px; border-radius: 8px; margin-bottom: 1rem; }
   </style>
 </head>
-
 <body>
-  <header>
-    <h1>新規記事作成</h1>
-    <a href="index.html">🏠 ホームへ</a>
-  </header>
-
   <main>
-    <div class="form-fields">
-      <input type="text" id="title" placeholder="タイトル">
-      <input type="text" id="description" placeholder="説明文">
-      <button id="createBtn">＋ 作成</button>
-    </div>
+    <h1>記事を作成</h1>
+    <input type="text" id="title" placeholder="タイトル">
+    <input type="text" id="description" placeholder="説明文">
 
-    <textarea id="markdownInput" placeholder="Markdown本文を入力..."></textarea>
-    <div class="preview" id="preview"></div>
+    <h3>Infobox（画像つき）</h3>
+    <input type="file" id="imageUpload">
+    <img id="previewImg" style="display:none;">
+    <textarea id="infoboxJson" placeholder='例：{"開発者":"Guido van Rossum"}'></textarea>
 
-    <div class="infobox-container">
-      <textarea id="infoboxInput" placeholder='{"作者": "山田太郎", "カテゴリ": "技術"}'></textarea>
-      <div class="infobox-preview" id="infoboxPreview">
-        <p>Infoboxプレビュー</p>
-      </div>
-    </div>
+    <h3>本文 (Markdown)</h3>
+    <textarea id="markdownInput" placeholder="Markdown本文..."></textarea>
+
+    <button id="saveBtn">保存</button>
   </main>
 
   <script type="module">
-    import { createArticle } from "./js/api.js";
+    import { uploadImage, addArticle } from "./js/api.js";
 
-    const titleInput = document.getElementById("title");
-    const descInput = document.getElementById("description");
-    const markdownInput = document.getElementById("markdownInput");
-    const infoboxInput = document.getElementById("infoboxInput");
-    const infoboxPreview = document.getElementById("infoboxPreview");
-    const preview = document.getElementById("preview");
-    const createBtn = document.getElementById("createBtn");
+    const imgInput = document.getElementById("imageUpload");
+    const previewImg = document.getElementById("previewImg");
+    let uploadedUrl = null;
 
-    function updateMarkdownPreview() {
-      preview.innerHTML = marked.parse(markdownInput.value);
-    }
+    // 画像選択で即アップロード
+    imgInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const url = await uploadImage(file);
+      uploadedUrl = url;
+      previewImg.src = url;
+      previewImg.style.display = "block";
+      alert("画像アップロード完了！");
+    });
 
-    function updateInfoboxPreview() {
-      try {
-        const json = JSON.parse(infoboxInput.value || "{}");
-        infoboxPreview.innerHTML = `
-          <table>
-            ${Object.entries(json).map(([k,v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join("")}
-          </table>
-        `;
-      } catch (e) {
-        infoboxPreview.innerHTML = "<p style='color:red;'>⚠ JSONの形式が正しくありません。</p>";
-      }
-    }
-
-    markdownInput.addEventListener("input", updateMarkdownPreview);
-    infoboxInput.addEventListener("input", updateInfoboxPreview);
-
-    createBtn.addEventListener("click", async () => {
-      if (!titleInput.value.trim()) {
-        alert("タイトルを入力してください");
-        return;
-      }
-
-      let infoboxData = {};
-      try {
-        infoboxData = JSON.parse(infoboxInput.value || "{}");
-      } catch (e) {
-        alert("InfoboxのJSON形式が不正です");
-        return;
-      }
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      const infobox = JSON.parse(document.getElementById("infoboxJson").value || "{}");
+      if (uploadedUrl) infobox["画像"] = uploadedUrl; // 🔥 画像URLをinfoboxに追加
 
       const article = {
-        title: titleInput.value,
-        description: descInput.value,
-        markdown: markdownInput.value,
-        infobox: infoboxData,
+        title: document.getElementById("title").value,
+        description: document.getElementById("description").value,
+        markdown: document.getElementById("markdownInput").value,
+        infobox: infobox,
       };
 
       try {
-        await createArticle(article);
+        await addArticle(article);
         alert("記事を作成しました！");
-        window.location.href = `article.html?title=${encodeURIComponent(article.title)}`;
-      } catch (e) {
-        alert("記事の作成に失敗しました。");
-        console.error(e);
+        window.location.href = "index.html";
+      } catch (err) {
+        console.error(err);
+        alert("作成に失敗しました");
       }
     });
-
-    updateMarkdownPreview();
-    updateInfoboxPreview();
   </script>
 </body>
 </html>
