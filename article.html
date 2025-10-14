@@ -3,110 +3,56 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wiki記事</title>
+  <title>記事表示 - My Wiki</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     body {
       font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
       background-color: #f8f9fa;
       color: #202122;
       margin: 0;
-      line-height: 1.6;
+      line-height: 1.8;
     }
 
     header {
       background-color: #eaecf0;
       padding: 1rem 2rem;
       border-bottom: 1px solid #a2a9b1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     header h1 {
       margin: 0;
-      font-size: 1.8rem;
+      font-size: 1.4rem;
     }
 
-    nav {
-      background-color: #f8f9fa;
-      border-right: 1px solid #a2a9b1;
-      padding: 1rem;
-      width: 220px;
-      height: 100vh;
-      position: fixed;
-      overflow-y: auto;
+    header a {
+      color: #3366cc;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    header a:hover {
+      text-decoration: underline;
     }
 
     main {
-      margin-left: 250px;
       padding: 2rem;
       max-width: 900px;
+      margin: auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     }
 
-    h2 {
-      border-bottom: 1px solid #a2a9b1;
-      padding-bottom: 0.2rem;
+    h1, h2, h3 {
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.3rem;
+      margin-top: 2rem;
     }
 
-    footer {
-      margin-top: 3rem;
-      padding-top: 1rem;
-      border-top: 1px solid #a2a9b1;
-      font-size: 0.9rem;
-      color: #555;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <h1 id="pageTitle">Wiki記事</h1>
-    <p><a href="index.html">← ホームへ戻る</a></p>
-  </header>
-
-  <nav>
-    <h3>目次</h3>
-    <ul>
-      <li><a href="#overview">概要</a></li>
-      <li><a href="#history">歴史</a></li>
-      <li><a href="#features">特徴</a></li>
-      <li><a href="#usage">利用</a></li>
-      <li><a href="#evaluation">評価</a></li>
-    </ul>
-  </nav>
-
-  <main id="articleContent">
-    <p>読み込み中...</p>
-  </main>
-
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const title = params.get("title");
-
-    if (!title) {
-      document.getElementById("articleContent").innerHTML = "<p>記事が指定されていません。</p>";
-    } else {
-      fetch("articles.json")
-        .then(res => res.json())
-        .then(data => {
-          const article = data.find(a => a.title === title);
-          if (!article) {
-            document.getElementById("articleContent").innerHTML = "<p>該当する記事が見つかりません。</p>";
-            return;
-          }
-
-          document.title = `${article.title} - My Wiki`;
-          document.getElementById("pageTitle").textContent = article.title;
-
-          document.getElementById("articleContent").innerHTML = `
-            <section id="overview"><h2>概要</h2><p>${article.overview}</p></section>
-            <section id="history"><h2>歴史</h2><p>${article.history}</p></section>
-            <section id="features"><h2>特徴</h2><p>${article.features}</p></section>
-            <section id="usage"><h2>利用</h2><p>${article.usage}</p></section>
-            <section id="evaluation"><h2>評価</h2><p>${article.evaluation}</p></section>
-            <footer><p>最終更新日: ${new Date(document.lastModified).toLocaleString()}</p></footer>
-          `;
-        })
-        .catch(() => {
-          document.getElementById("articleContent").innerHTML = "<p>記事データを読み込めませんでした。</p>";
-        });
-    }
-  </script>
-</body>
-</html>
+    pre {
+      background: #f6f8fa;
+      padding:
