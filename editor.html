@@ -1,155 +1,189 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>記事を編集 - My Wiki</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>記事編集 - My Wiki</title>
 
-  <!-- Supabase / Marked -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script type="module" src="js/api.js"></script>
 
   <style>
     body {
-      font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
+      font-family: "Hiragino Sans", "Meiryo", sans-serif;
       background: #f8f9fa;
       margin: 0;
-      color: #222;
-    }
-    header {
-      background: #eaecf0;
-      padding: 1rem 2rem;
-      border-bottom: 1px solid #ccc;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    header a {
-      color: #007bff;
-      text-decoration: none;
     }
     main {
+      max-width: 1000px;
+      margin: auto;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    input, textarea {
+      width: 100%;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .editor-area {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
-      padding: 1.5rem;
-      max-width: 1200px;
-      margin: auto;
-    }
-    textarea {
-      width: 100%;
-      height: 70vh;
-      padding: 1rem;
-      font-family: monospace;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      resize: vertical;
-      background: white;
     }
     .preview {
       background: white;
-      border: 1px solid #ccc;
-      border-radius: 8px;
       padding: 1rem;
-      overflow-y: auto;
-      height: 70vh;
-    }
-    .form-fields {
-      grid-column: span 2;
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-    input[type="text"] {
-      flex: 1;
-      padding: 0.6rem;
       border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
+      border: 1px solid #ddd;
+      overflow-y: auto;
     }
     button {
-      padding: 0.6rem 1.2rem;
+      padding: 0.7rem 1.5rem;
       border: none;
       border-radius: 6px;
       background: #007bff;
       color: white;
       font-size: 1rem;
       cursor: pointer;
-      transition: background 0.2s;
+      margin-top: 1rem;
     }
     button:hover {
       background: #0056b3;
     }
+    .infobox {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .infobox img {
+      max-width: 200px;
+      border-radius: 8px;
+      display: block;
+      margin-bottom: 1rem;
+    }
   </style>
 </head>
-
 <body>
-  <header>
-    <h1>記事を編集</h1>
-    <a href="index.html">🏠 ホームへ</a>
-  </header>
-
   <main>
-    <div class="form-fields">
-      <input type="text" id="title" placeholder="タイトル" readonly>
-      <input type="text" id="description" placeholder="説明文">
-      <button id="saveBtn">💾 保存</button>
+    <h1>記事を編集</h1>
+    <input type="text" id="title" placeholder="タイトル">
+    <input type="text" id="description" placeholder="説明文">
+
+    <div class="infobox">
+      <h3>Infobox（画像つき）</h3>
+      <input type="file" id="imageUpload">
+      <img id="previewImg" style="display:none;">
+      <textarea id="infoboxJson" placeholder='例：{"開発者":"Guido van Rossum"}'></textarea>
     </div>
 
-    <textarea id="markdownInput" placeholder="Markdownを入力..."></textarea>
-    <div class="preview" id="preview"></div>
+    <div class="editor-area">
+      <textarea id="markdownInput" placeholder="Markdown本文を編集..."></textarea>
+      <div class="preview" id="preview"></div>
+    </div>
+
+    <button id="saveBtn">保存</button>
   </main>
 
   <script type="module">
-    import { getArticle, updateArticle } from "./js/api.js";
+    import { supabase, uploadImage, getArticle, updateArticle } from "./js/api.js";
 
     const params = new URLSearchParams(window.location.search);
-    const titleParam = params.get("title");
+    const articleId = params.get("id");
 
-    const titleInput = document.getElementById("title");
-    const descInput = document.getElementById("description");
-    const markdownInput = document.getElementById("markdownInput");
-    const preview = document.getElementById("preview");
-    const saveBtn = document.getElementById("saveBtn");
+    const titleEl = document.getElementById("title");
+    const descEl = document.getElementById("description");
+    const markdownEl = document.getElementById("markdownInput");
+    const previewEl = document.getElementById("preview");
+    const infoBoxEl = document.getElementById("infoboxJson");
+    const imgInput = document.getElementById("imageUpload");
+    const previewImg = document.getElementById("previewImg");
 
+    let uploadedUrl = null;
+    let currentInfobox = {};
+
+    // ✅ Markdownリアルタイムプレビュー
+    markdownEl.addEventListener("input", () => {
+      previewEl.innerHTML = marked.parse(markdownEl.value);
+    });
+
+    // ✅ 画像アップロード
+    imgInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const url = await uploadImage(file);
+      uploadedUrl = url;
+      previewImg.src = url;
+      previewImg.style.display = "block";
+      alert("画像をアップロードしました！");
+    });
+
+    // ✅ 記事データを取得して反映
     async function loadArticle() {
-      if (!titleParam) {
-        preview.innerHTML = "<p>タイトルが指定されていません。</p>";
+      if (!articleId) {
+        alert("記事IDが指定されていません。");
         return;
       }
-      try {
-        const article = await getArticle(titleParam);
-        titleInput.value = article.title;
-        descInput.value = article.description || "";
-        markdownInput.value = article.markdown || "";
-        updatePreview();
-      } catch (e) {
-        preview.innerHTML = "<p>記事が見つかりません。</p>";
-        console.error(e);
+      const article = await getArticle(articleId);
+      if (!article) {
+        alert("記事が見つかりません。");
+        return;
+      }
+
+      titleEl.value = article.title;
+      descEl.value = article.description;
+      markdownEl.value = article.markdown || "";
+      previewEl.innerHTML = marked.parse(article.markdown || "");
+
+      currentInfobox = typeof article.infobox === "string"
+        ? JSON.parse(article.infobox)
+        : article.infobox || {};
+
+      infoBoxEl.value = JSON.stringify(currentInfobox, null, 2);
+
+      if (currentInfobox["画像"]) {
+        previewImg.src = currentInfobox["画像"];
+        previewImg.style.display = "block";
       }
     }
 
-    function updatePreview() {
-      preview.innerHTML = marked.parse(markdownInput.value);
-    }
-
-    markdownInput.addEventListener("input", updatePreview);
-
-    saveBtn.addEventListener("click", async () => {
-      const newData = {
-        description: descInput.value,
-        markdown: markdownInput.value,
-      };
+    // ✅ 保存処理
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      let infoboxData = {};
       try {
-        await updateArticle(titleParam, newData);
+        infoboxData = JSON.parse(infoBoxEl.value || "{}");
+      } catch (err) {
+        alert("Infoboxの形式が正しくありません");
+        return;
+      }
+
+      if (uploadedUrl) infoboxData["画像"] = uploadedUrl;
+
+      const updated = {
+        title: titleEl.value,
+        description: descEl.value,
+        markdown: markdownEl.value,
+        infobox: infoboxData,
+      };
+
+      try {
+        await updateArticle(articleId, updated);
         alert("保存しました！");
-      } catch (e) {
-        alert("保存に失敗しました。");
-        console.error(e);
+        window.location.href = `article.html?id=${articleId}`;
+      } catch (err) {
+        console.error(err);
+        alert("保存中にエラーが発生しました");
       }
     });
 
+    // 初期化
     loadArticle();
   </script>
 </body>
