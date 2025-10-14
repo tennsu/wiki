@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wikiエディタ - My Wiki</title>
+  <title>Wikiエディタ（Markdown対応） - My Wiki</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     body {
       font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
@@ -21,9 +22,21 @@
     }
 
     main {
+      display: flex;
+      flex-direction: row;
+      gap: 2rem;
       padding: 2rem;
-      max-width: 1000px;
+      max-width: 1200px;
       margin: auto;
+    }
+
+    .left, .right {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
     select, input, textarea, button {
@@ -37,8 +50,9 @@
     }
 
     textarea {
-      height: 80px;
+      height: 200px;
       resize: vertical;
+      font-family: monospace;
     }
 
     button {
@@ -53,6 +67,14 @@
       background-color: #254b9b;
     }
 
+    .delete-btn {
+      background-color: #c9302c;
+    }
+
+    .delete-btn:hover {
+      background-color: #a52a2a;
+    }
+
     .actions {
       display: flex;
       gap: 1rem;
@@ -60,6 +82,30 @@
 
     .actions button {
       flex: 1;
+    }
+
+    .preview {
+      overflow-y: auto;
+      max-height: 80vh;
+    }
+
+    .preview h1, .preview h2, .preview h3 {
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.2rem;
+    }
+
+    .preview pre {
+      background: #f6f8fa;
+      padding: 0.8rem;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+
+    .preview code {
+      background: #f0f0f0;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: "Consolas", monospace;
     }
 
     footer {
@@ -71,14 +117,6 @@
       text-align: center;
     }
 
-    .delete-btn {
-      background-color: #c9302c;
-    }
-
-    .delete-btn:hover {
-      background-color: #a52a2a;
-    }
-
     .notice {
       background: #fff3cd;
       color: #856404;
@@ -87,38 +125,49 @@
       border-radius: 6px;
       margin-bottom: 1rem;
     }
+
+    @media (max-width: 900px) {
+      main {
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Wiki記事エディタ</h1>
-    <p><a href="index.html">← ホームへ戻る</a></p>
+    <h1>Wikiエディタ（Markdown対応）</h1>
+    <p>
+      <a href="index.html">← ホームへ戻る</a> |
+      <a href="new.html">🆕 新規作成ページへ</a>
+    </p>
   </header>
 
   <main>
-    <div class="notice">
-      ⚙️ 編集結果は直接ファイルに保存されません。<br>
-      「JSONをダウンロード」ボタンで更新データを保存してください。
-    </div>
+    <section class="left">
+      <div class="notice">
+        ⚙️ Markdown形式で編集可能です。右側にリアルタイムプレビューが表示されます。
+      </div>
 
-    <h2>記事を選択または追加</h2>
-    <select id="articleSelect">
-      <option value="">新しい記事を作成</option>
-    </select>
+      <h2>記事を選択または追加</h2>
+      <select id="articleSelect">
+        <option value="">新しい記事を作成</option>
+      </select>
 
-    <input type="text" id="title" placeholder="タイトル（必須）" />
-    <input type="text" id="description" placeholder="概要説明" />
-    <textarea id="overview" placeholder="概要"></textarea>
-    <textarea id="history" placeholder="歴史"></textarea>
-    <textarea id="features" placeholder="特徴"></textarea>
-    <textarea id="usage" placeholder="利用"></textarea>
-    <textarea id="evaluation" placeholder="評価"></textarea>
+      <input type="text" id="title" placeholder="タイトル（必須）" />
+      <input type="text" id="description" placeholder="概要説明" />
+      <textarea id="markdown" placeholder="# 見出し1\n## 見出し2\n本文..."></textarea>
 
-    <div class="actions">
-      <button id="saveBtn">記事を保存</button>
-      <button class="delete-btn" id="deleteBtn">記事を削除</button>
-      <button id="downloadBtn">JSONをダウンロード</button>
-    </div>
+      <div class="actions">
+        <button id="saveBtn">記事を保存</button>
+        <button class="delete-btn" id="deleteBtn">記事を削除</button>
+        <button id="downloadBtn">JSONをダウンロード</button>
+      </div>
+    </section>
+
+    <section class="right">
+      <h2>プレビュー</h2>
+      <div class="preview" id="previewContent">(ここにMarkdownプレビューが表示されます)</div>
+    </section>
   </main>
 
   <footer>
@@ -127,15 +176,10 @@
 
   <script>
     const select = document.getElementById("articleSelect");
-    const fields = {
-      title: document.getElementById("title"),
-      description: document.getElementById("description"),
-      overview: document.getElementById("overview"),
-      history: document.getElementById("history"),
-      features: document.getElementById("features"),
-      usage: document.getElementById("usage"),
-      evaluation: document.getElementById("evaluation")
-    };
+    const titleInput = document.getElementById("title");
+    const descInput = document.getElementById("description");
+    const markdownInput = document.getElementById("markdown");
+    const preview = document.getElementById("previewContent");
 
     let articles = [];
 
@@ -159,21 +203,36 @@
       });
     }
 
-    // 記事選択時に内容を反映
+    // 記事選択時
     select.addEventListener("change", () => {
       const index = select.value;
       if (index === "") {
-        Object.values(fields).forEach(f => f.value = "");
+        titleInput.value = "";
+        descInput.value = "";
+        markdownInput.value = "";
+        preview.innerHTML = "(ここにMarkdownプレビューが表示されます)";
         return;
       }
       const article = articles[index];
-      Object.keys(fields).forEach(k => fields[k].value = article[k] || "");
+      titleInput.value = article.title || "";
+      descInput.value = article.description || "";
+      markdownInput.value = article.markdown || "";
+      preview.innerHTML = marked.parse(markdownInput.value);
     });
 
-    // 保存ボタン
+    // Markdownリアルタイム変換
+    markdownInput.addEventListener("input", () => {
+      preview.innerHTML = marked.parse(markdownInput.value);
+    });
+
+    // 保存
     document.getElementById("saveBtn").addEventListener("click", () => {
-      const newArticle = {};
-      Object.keys(fields).forEach(k => newArticle[k] = fields[k].value.trim());
+      const newArticle = {
+        title: titleInput.value.trim(),
+        description: descInput.value.trim(),
+        markdown: markdownInput.value.trim(),
+        updatedAt: new Date().toISOString(),
+      };
 
       if (!newArticle.title) {
         alert("タイトルは必須です。");
@@ -183,11 +242,9 @@
       const existingIndex = articles.findIndex(a => a.title === newArticle.title);
 
       if (existingIndex >= 0) {
-        // 上書き
         articles[existingIndex] = newArticle;
         alert("記事を更新しました。");
       } else {
-        // 新規追加
         articles.push(newArticle);
         alert("新しい記事を追加しました。");
       }
@@ -196,7 +253,7 @@
       select.value = articles.findIndex(a => a.title === newArticle.title);
     });
 
-    // 削除ボタン
+    // 削除
     document.getElementById("deleteBtn").addEventListener("click", () => {
       const index = select.value;
       if (index === "") {
@@ -208,7 +265,10 @@
       if (confirm(`「${title}」を削除しますか？`)) {
         articles.splice(index, 1);
         updateSelect();
-        Object.values(fields).forEach(f => f.value = "");
+        titleInput.value = "";
+        descInput.value = "";
+        markdownInput.value = "";
+        preview.innerHTML = "(ここにMarkdownプレビューが表示されます)";
         alert("記事を削除しました。");
       }
     });
