@@ -9,10 +9,9 @@
 
   <style>
     body {
-      font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
-      background-color: #f8f9fa;
+      font-family: "Hiragino Sans", "Meiryo", sans-serif;
       margin: 0;
-      color: #222;
+      background: #f8f9fa;
     }
     header {
       background: #eaecf0;
@@ -20,120 +19,87 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #ccc;
     }
-    header h1 {
-      font-size: 1.2rem;
-      margin: 0;
+    header a {
+      color: #007bff;
+      text-decoration: none;
     }
     main {
-      max-width: 900px;
+      padding: 1rem 2rem;
+      max-width: 800px;
       margin: auto;
-      padding: 2rem;
-    }
-    .search-bar {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-    input[type="search"] {
-      flex: 1;
-      padding: 0.6rem;
-      font-size: 1rem;
-      border-radius: 6px;
-      border: 1px solid #ccc;
     }
     article {
       background: white;
+      padding: 1rem;
+      border-radius: 8px;
       margin-bottom: 1rem;
-      padding: 1rem 1.2rem;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      transition: 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    article:hover {
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    article h2 {
-      margin: 0;
-      font-size: 1.1rem;
-    }
-    footer {
-      text-align: center;
-      margin: 3rem 0 1rem;
-      color: #666;
-      font-size: 0.9rem;
-    }
-    .new-article {
-      margin-bottom: 1rem;
+    .actions {
+      margin-top: 1rem;
       text-align: right;
     }
-    .new-article a {
-      background: #4caf50;
-      color: white;
-      padding: 0.5rem 1rem;
+    button {
+      border: none;
       border-radius: 6px;
-      text-decoration: none;
+      padding: 0.5rem 1rem;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
     }
   </style>
 </head>
-
 <body>
   <header>
     <h1>My Wiki</h1>
+    <div id="authArea"></div>
   </header>
 
   <main>
-    <div class="new-article">
-      <a href="new.html">＋ 新規作成</a>
-    </div>
-
-    <div class="search-bar">
-      <input type="search" id="searchInput" placeholder="記事を検索..." />
-    </div>
-
-    <div id="articleList">
-      <p>読み込み中...</p>
-    </div>
+    <div id="articles"></div>
   </main>
 
-  <footer>
-    <p>&copy; 2025 My Wiki</p>
-  </footer>
-
   <script type="module">
-    import { getArticles } from "./js/api.js";
+    import { supabase, getArticles } from "./js/api.js";
 
-    const listContainer = document.getElementById("articleList");
-    const searchInput = document.getElementById("searchInput");
-    let articles = [];
+    const articlesDiv = document.getElementById("articles");
+    const authArea = document.getElementById("authArea");
 
-    async function loadArticles() {
-      try {
-        articles = await getArticles();
-        renderList(articles);
-      } catch (e) {
-        listContainer.innerHTML = "<p>記事の読み込みに失敗しました。</p>";
-        console.error(e);
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        authArea.innerHTML = `
+          <span>${session.user.email}</span>
+          <button id="logoutBtn">ログアウト</button>
+          <a href="new.html" style="margin-left:1rem;">📝 新規作成</a>
+        `;
+        document.getElementById("logoutBtn").addEventListener("click", async () => {
+          await supabase.auth.signOut();
+          location.reload();
+        });
+      } else {
+        authArea.innerHTML = `<a href="auth.html">ログイン / 新規登録</a>`;
       }
     }
 
-    function renderList(items) {
-      listContainer.innerHTML = items.map(article => `
+    async function loadArticles() {
+      const data = await getArticles();
+      articlesDiv.innerHTML = data.map(a => `
         <article>
-          <h2><a href="article.html?title=${encodeURIComponent(article.title)}">${article.title}</a></h2>
-          <p>${article.description || ""}</p>
-          <small>更新: ${new Date(article.updated_at).toLocaleDateString()}</small>
+          <h2><a href="article.html?title=${encodeURIComponent(a.title)}">${a.title}</a></h2>
+          <p>${a.description || ""}</p>
+          <div class="actions">
+            <a href="editor.html?title=${encodeURIComponent(a.title)}">✏ 編集</a>
+          </div>
         </article>
       `).join("");
     }
 
-    searchInput.addEventListener("input", e => {
-      const q = e.target.value.toLowerCase();
-      const filtered = articles.filter(a => a.title.toLowerCase().includes(q));
-      renderList(filtered);
-    });
-
+    checkAuth();
     loadArticles();
   </script>
 </body>
