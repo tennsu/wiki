@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>新規記事作成 - My Wiki</title>
+  <title>新規記事作成（Markdown対応） - My Wiki</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     body {
       font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
@@ -22,8 +23,24 @@
 
     main {
       padding: 2rem;
-      max-width: 900px;
+      max-width: 1200px;
       margin: auto;
+      display: flex;
+      gap: 2rem;
+    }
+
+    .editor, .preview {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .preview {
+      overflow-y: auto;
+      max-height: 80vh;
     }
 
     input, textarea, button {
@@ -37,7 +54,7 @@
     }
 
     textarea {
-      height: 80px;
+      height: 200px;
       resize: vertical;
     }
 
@@ -70,30 +87,61 @@
       border-radius: 6px;
       margin-bottom: 1rem;
     }
+
+    .preview h1, .preview h2, .preview h3 {
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.2rem;
+    }
+
+    .preview pre {
+      background: #f6f8fa;
+      padding: 0.8rem;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+
+    .preview code {
+      background: #f0f0f0;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: "Consolas", monospace;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>新しい記事を作成</h1>
-    <p><a href="index.html">← ホームへ戻る</a> | <a href="editor.html">🛠 編集ページへ</a></p>
+    <h1>新しい記事を作成（Markdown対応）</h1>
+    <p>
+      <a href="index.html">← ホームへ戻る</a> |
+      <a href="editor.html">🛠 編集ページへ</a>
+    </p>
   </header>
 
   <main>
-    <div class="notice">
-      ⚙️ 作成した記事はブラウザ上に保存されます。<br>
-      「JSONをダウンロード」ボタンでデータを保存してください。
-    </div>
+    <section class="editor">
+      <div class="notice">
+        ✏️ Markdown形式で記事を記入してください。<br>
+        プレビューは右側にリアルタイムで表示されます。
+      </div>
 
-    <input type="text" id="title" placeholder="タイトル（必須）" />
-    <input type="text" id="description" placeholder="概要説明" />
-    <textarea id="overview" placeholder="概要"></textarea>
-    <textarea id="history" placeholder="歴史"></textarea>
-    <textarea id="features" placeholder="特徴"></textarea>
-    <textarea id="usage" placeholder="利用"></textarea>
-    <textarea id="evaluation" placeholder="評価"></textarea>
+      <input type="text" id="title" placeholder="タイトル（必須）" />
+      <input type="text" id="description" placeholder="概要説明" />
+      <textarea id="markdown" placeholder="# 見出し1\n## 見出し2\n本文..."></textarea>
 
-    <button id="addBtn">記事を追加</button>
-    <button id="downloadBtn">JSONをダウンロード</button>
+      <button id="addBtn">記事を追加</button>
+      <button id="downloadBtn">JSONをダウンロード</button>
+    </section>
+
+    <section class="preview">
+      <h2>プレビュー</h2>
+      <div id="previewContent">(ここにMarkdownプレビューが表示されます)</div>
+    </section>
   </main>
 
   <footer>
@@ -109,18 +157,23 @@
       .then(data => {
         articles = data;
       })
-      .catch(() => alert("記事データを読み込めませんでした。"));
+      .catch(() => alert("articles.json を読み込めませんでした。"));
 
-    // 新規追加
+    // Markdownリアルタイム変換
+    const markdownInput = document.getElementById("markdown");
+    const preview = document.getElementById("previewContent");
+
+    markdownInput.addEventListener("input", () => {
+      preview.innerHTML = marked.parse(markdownInput.value);
+    });
+
+    // 記事追加
     document.getElementById("addBtn").addEventListener("click", () => {
       const newArticle = {
         title: document.getElementById("title").value.trim(),
         description: document.getElementById("description").value.trim(),
-        overview: document.getElementById("overview").value.trim(),
-        history: document.getElementById("history").value.trim(),
-        features: document.getElementById("features").value.trim(),
-        usage: document.getElementById("usage").value.trim(),
-        evaluation: document.getElementById("evaluation").value.trim(),
+        markdown: markdownInput.value.trim(),
+        createdAt: new Date().toISOString(),
       };
 
       if (!newArticle.title) {
@@ -128,8 +181,7 @@
         return;
       }
 
-      const exists = articles.find(a => a.title === newArticle.title);
-      if (exists) {
+      if (articles.find(a => a.title === newArticle.title)) {
         alert("同じタイトルの記事が既に存在します。");
         return;
       }
@@ -137,7 +189,10 @@
       articles.push(newArticle);
       localStorage.setItem("wiki_articles", JSON.stringify(articles));
       alert("記事を追加しました！");
-      Object.values(document.querySelectorAll("input, textarea")).forEach(el => el.value = "");
+      markdownInput.value = "";
+      document.getElementById("title").value = "";
+      document.getElementById("description").value = "";
+      preview.innerHTML = "(ここにMarkdownプレビューが表示されます)";
     });
 
     // JSONダウンロード
