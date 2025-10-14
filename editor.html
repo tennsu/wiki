@@ -2,88 +2,116 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>記事編集 - My Wiki</title>
 
-  <!-- ✅ TinyMCE -->
-  <script src="tj631xvvm36oh9q1fud6srms54cpa8yj5mlxxrofrao7qdhl" referrerpolicy="origin"></script>
-  <script type="module" src="./js/editor.js"></script>
+  <!-- TinyMCE -->
+  <script src="https://cdn.tiny.cloud/1/tj631xvvm36oh9q1fud6srms54cpa8yj5mlxxrofrao7qdhl/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+
+  <script type="module" src="js/api.js"></script>
 
   <style>
     body {
-      font-family: "Hiragino Sans", "Meiryo", sans-serif;
-      background: #f5f7fa;
+      font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
+      background: #f8f9fa;
       margin: 0;
-      padding: 2rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      padding: 20px;
     }
-
     h1 {
-      margin-bottom: 1rem;
+      text-align: center;
     }
-
-    input {
-      width: 100%;
-      max-width: 800px;
-      padding: 0.5rem;
-      margin-bottom: 1rem;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+    #editor-container {
+      display: flex;
+      gap: 20px;
     }
-
-    #editorContainer {
-      width: 100%;
-      max-width: 800px;
-    }
-
     #preview {
-      margin-top: 2rem;
-      width: 100%;
-      max-width: 800px;
-      background: white;
-      padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      flex: 1;
+      background: #fff;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      overflow-y: auto;
+      height: 500px;
     }
-
-    button {
-      margin-top: 1rem;
-      padding: 0.6rem 1.2rem;
+    #saveBtn {
+      display: block;
+      margin: 20px auto;
       background: #007bff;
       color: white;
+      padding: 10px 20px;
       border: none;
       border-radius: 6px;
       cursor: pointer;
       font-size: 1rem;
     }
-
-    button:hover {
+    #saveBtn:hover {
       background: #0056b3;
-    }
-
-    #previewBtn {
-      background: #28a745;
-      margin-left: 0.5rem;
     }
   </style>
 </head>
 <body>
-  <h1>記事編集</h1>
-
-  <input type="text" id="title" placeholder="タイトルを入力" />
-
-  <div id="editorContainer">
+  <h1>記事を編集</h1>
+  <div id="editor-container">
     <textarea id="editor"></textarea>
+    <div id="preview"></div>
   </div>
+  <button id="saveBtn">💾 保存</button>
 
-  <div>
-    <button id="saveBtn">💾 保存</button>
-    <button id="previewBtn">👁️ プレビュー</button>
-  </div>
+  <script type="module">
+    import { supabase } from "./js/api.js";
 
-  <div id="preview" style="display:none;"></div>
+    const params = new URLSearchParams(window.location.search);
+    const articleId = params.get("id");
+
+    // ✅ TinyMCEの初期化
+    tinymce.init({
+      selector: "#editor",
+      height: 500,
+      menubar: true,
+      plugins: "link image code lists table",
+      toolbar: "undo redo | styles | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image | code",
+      setup: (editor) => {
+        editor.on("keyup change", () => {
+          document.getElementById("preview").innerHTML = editor.getContent();
+        });
+      }
+    });
+
+    // 🧠 記事の読み込み
+    if (articleId) {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .eq("id", articleId)
+        .single();
+
+      if (data) {
+        tinymce.activeEditor?.setContent(data.content || "");
+        document.getElementById("preview").innerHTML = data.content || "";
+      }
+    }
+
+    // 💾 保存ボタン
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      const content = tinymce.activeEditor.getContent();
+      const title = content.replace(/<[^>]+>/g, "").slice(0, 30) || "無題";
+
+      if (articleId) {
+        // 既存記事の更新
+        const { error } = await supabase
+          .from("articles")
+          .update({ title, content })
+          .eq("id", articleId);
+        if (error) alert("保存失敗: " + error.message);
+        else alert("✅ 記事を更新しました");
+      } else {
+        // 新規作成
+        const { error } = await supabase
+          .from("articles")
+          .insert([{ title, content }]);
+        if (error) alert("保存失敗: " + error.message);
+        else alert("✅ 新しい記事を作成しました");
+      }
+    });
+  </script>
 </body>
 </html>
