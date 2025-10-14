@@ -45,15 +45,6 @@
       padding-bottom: 0.2rem;
     }
 
-    a {
-      color: #0645ad;
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
     footer {
       margin-top: 3rem;
       padding-top: 1rem;
@@ -61,15 +52,11 @@
       font-size: 0.9rem;
       color: #555;
     }
-
-    html {
-      scroll-behavior: smooth;
-    }
   </style>
 </head>
 <body>
   <header>
-    <h1 id="pageTitle">Wiki記事タイトル</h1>
+    <h1 id="pageTitle">Wiki記事</h1>
     <p><a href="index.html">← ホームへ戻る</a></p>
   </header>
 
@@ -84,46 +71,42 @@
     </ul>
   </nav>
 
-  <main>
-    <section id="overview">
-      <h2>概要</h2>
-      <p>この記事の概要をここに記述します。</p>
-    </section>
-
-    <section id="history">
-      <h2>歴史</h2>
-      <p>対象の歴史や開発経緯をここに書きます。</p>
-    </section>
-
-    <section id="features">
-      <h2>特徴</h2>
-      <p>対象の機能や仕組みなどを説明します。</p>
-    </section>
-
-    <section id="usage">
-      <h2>利用</h2>
-      <p>使用例や応用方法などを記述します。</p>
-    </section>
-
-    <section id="evaluation">
-      <h2>評価</h2>
-      <p>利点・課題・社会的影響などをまとめます。</p>
-    </section>
-
-    <footer>
-      <p>最終更新日: <span id="lastUpdated"></span></p>
-    </footer>
+  <main id="articleContent">
+    <p>読み込み中...</p>
   </main>
 
   <script>
-    // URLパラメータから記事タイトルを取得して表示
     const params = new URLSearchParams(window.location.search);
-    const title = params.get("title") || "Wiki記事";
-    document.title = `${title} - My Wiki`;
-    document.getElementById("pageTitle").textContent = title;
+    const title = params.get("title");
 
-    // 最終更新日時を表示
-    document.getElementById("lastUpdated").textContent = new Date(document.lastModified).toLocaleString();
+    if (!title) {
+      document.getElementById("articleContent").innerHTML = "<p>記事が指定されていません。</p>";
+    } else {
+      fetch("articles.json")
+        .then(res => res.json())
+        .then(data => {
+          const article = data.find(a => a.title === title);
+          if (!article) {
+            document.getElementById("articleContent").innerHTML = "<p>該当する記事が見つかりません。</p>";
+            return;
+          }
+
+          document.title = `${article.title} - My Wiki`;
+          document.getElementById("pageTitle").textContent = article.title;
+
+          document.getElementById("articleContent").innerHTML = `
+            <section id="overview"><h2>概要</h2><p>${article.overview}</p></section>
+            <section id="history"><h2>歴史</h2><p>${article.history}</p></section>
+            <section id="features"><h2>特徴</h2><p>${article.features}</p></section>
+            <section id="usage"><h2>利用</h2><p>${article.usage}</p></section>
+            <section id="evaluation"><h2>評価</h2><p>${article.evaluation}</p></section>
+            <footer><p>最終更新日: ${new Date(document.lastModified).toLocaleString()}</p></footer>
+          `;
+        })
+        .catch(() => {
+          document.getElementById("articleContent").innerHTML = "<p>記事データを読み込めませんでした。</p>";
+        });
+    }
   </script>
 </body>
 </html>
