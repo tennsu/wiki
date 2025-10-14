@@ -2,143 +2,94 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>新規記事作成 - My Wiki</title>
-  <script type="module" src="js/api.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- ✅ TinyMCE CDN -->
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+  <script type="module" src="./js/new.js"></script>
+
   <style>
     body {
-      font-family: "Hiragino Sans", sans-serif;
-      background: #f8f9fa;
+      font-family: "Hiragino Sans", "Meiryo", sans-serif;
+      background: #f5f7fa;
       margin: 0;
-    }
-    header {
-      background: #e5e7eb;
-      padding: 1rem;
+      padding: 2rem;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
     }
-    main {
-      display: flex;
-      gap: 2rem;
-      padding: 2rem;
-      max-width: 1200px;
-      margin: auto;
+
+    h1 {
+      margin-bottom: 1rem;
     }
-    .editor, .preview {
-      flex: 1;
-      background: white;
-      border-radius: 10px;
-      padding: 1rem;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    textarea, input {
+
+    input {
       width: 100%;
-      padding: 0.8rem;
+      max-width: 800px;
+      padding: 0.6rem;
+      margin-bottom: 1rem;
       font-size: 1rem;
       border: 1px solid #ccc;
       border-radius: 6px;
-      margin-bottom: 1rem;
     }
-    textarea {
-      height: 400px;
-      font-family: monospace;
-      resize: vertical;
+
+    #editorContainer {
+      width: 100%;
+      max-width: 800px;
     }
+
+    #preview {
+      margin-top: 2rem;
+      width: 100%;
+      max-width: 800px;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
     button {
-      background: #16a34a;
+      margin-top: 1rem;
+      padding: 0.6rem 1.2rem;
+      background: #007bff;
       color: white;
       border: none;
-      padding: 0.6rem 1.2rem;
       border-radius: 6px;
       cursor: pointer;
       font-size: 1rem;
     }
+
     button:hover {
-      background: #15803d;
+      background: #0056b3;
     }
-    .preview h2 {
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 0.3rem;
+
+    #previewBtn {
+      background: #28a745;
+      margin-left: 0.5rem;
     }
-    #status {
-      margin-left: 1rem;
-      font-size: 0.9rem;
-      color: #666;
+
+    #backBtn {
+      background: #6c757d;
+      margin-left: 0.5rem;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>📝 新しい記事</h1>
-    <div>
-      <button id="saveBtn">💾 保存</button>
-      <span id="status"></span>
-      <a href="home.html" style="margin-left:1rem;">🏠 ホームへ</a>
-    </div>
-  </header>
+  <h1>📝 新規記事作成</h1>
 
-  <main>
-    <div class="editor">
-      <input type="text" id="title" placeholder="タイトルを入力" />
-      <textarea id="content" placeholder="Markdown本文を入力..."></textarea>
-    </div>
-    <div class="preview">
-      <h2>プレビュー</h2>
-      <div id="previewContent" style="line-height:1.8;"></div>
-    </div>
-  </main>
+  <input type="text" id="title" placeholder="タイトルを入力" />
 
-  <script type="module">
-    import { supabase, requireAuth } from "./js/api.js";
-    await requireAuth();
+  <div id="editorContainer">
+    <textarea id="editor"></textarea>
+  </div>
 
-    const titleEl = document.getElementById("title");
-    const contentEl = document.getElementById("content");
-    const previewEl = document.getElementById("previewContent");
-    const statusEl = document.getElementById("status");
+  <div>
+    <button id="saveBtn">💾 保存</button>
+    <button id="previewBtn">👁️ プレビュー</button>
+    <button id="backBtn">← 戻る</button>
+  </div>
 
-    // Markdownプレビュー
-    contentEl.addEventListener("input", () => {
-      previewEl.innerHTML = marked.parse(contentEl.value);
-    });
-
-    // 保存処理（新規作成）
-    document.getElementById("saveBtn").addEventListener("click", async () => {
-      const title = titleEl.value.trim();
-      const content = contentEl.value.trim();
-
-      if (!title || !content) {
-        alert("タイトルと本文を入力してください。");
-        return;
-      }
-
-      statusEl.textContent = "保存中...";
-
-      const { data: user } = await supabase.auth.getUser();
-
-      const { data, error } = await supabase
-        .from("articles")
-        .insert([
-          {
-            title,
-            content,
-            user_id: user.user?.id,
-            created_at: new Date(),
-            updated_at: new Date(),
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) {
-        alert("保存に失敗しました: " + error.message);
-        statusEl.textContent = "エラー";
-      } else {
-        statusEl.textContent = "保存完了";
-        window.location.href = `article.html?id=${data.id}`;
-      }
-    });
-  </script>
+  <div id="preview" style="display:none;"></div>
 </body>
 </html>
