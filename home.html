@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Wiki - ホーム</title>
+  <script type="module" src="js/api.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #f3f4f6;
+      font-family: sans-serif;
+    }
+    header {
+      background: #e5e7eb;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.3rem;
+    }
+    header button {
+      background: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+    }
+    main {
+      padding: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Wiki</h1>
+    <button id="logoutBtn">ログアウト</button>
+  </header>
+
+  <main>
+    <h2>記事一覧</h2>
+    <ul id="articles"></ul>
+  </main>
+
+  <script type="module">
+    import { supabase, requireAuth } from "./js/api.js";
+
+    // ログイン確認
+    await requireAuth();
+
+    // 記事取得
+    async function loadArticles() {
+      const { data, error } = await supabase.from("articles").select("*");
+      const list = document.getElementById("articles");
+      if (error) {
+        list.innerHTML = `<li>読み込みエラー: ${error.message}</li>`;
+        return;
+      }
+      list.innerHTML = data.map(a => `<li><a href="article.html?id=${a.id}">${a.title}</a></li>`).join("");
+    }
+
+    await loadArticles();
+
+    // ログアウト処理
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
