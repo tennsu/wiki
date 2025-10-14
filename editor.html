@@ -63,6 +63,11 @@
     button:hover {
       background: #0056b3;
     }
+
+    #previewBtn {
+      background: #28a745;
+      margin-left: 0.5rem;
+    }
   </style>
 </head>
 <body>
@@ -74,8 +79,10 @@
     <textarea id="editor"></textarea>
   </div>
 
-  <button id="saveBtn">💾 保存</button>
-  <button id="previewBtn" style="background:#28a745;">👁️ プレビュー</button>
+  <div>
+    <button id="saveBtn">💾 保存</button>
+    <button id="previewBtn">👁️ プレビュー</button>
+  </div>
 
   <div id="preview" style="display:none;"></div>
 </body>
