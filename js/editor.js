@@ -1,148 +1,71 @@
-import { supabase, requireAuth } from "./api.js";
-await requireAuth();
+import { supabase } from "./api.js";
 
 const params = new URLSearchParams(window.location.search);
 const articleId = params.get("id");
 
-const titleEl = document.getElementById("title");
-const previewEl = document.getElementById("preview");
-const modeMarkdownBtn = document.getElementById("modeMarkdown");
-const modeRichBtn = document.getElementById("modeRich");
+let editor;
 
-let mode = "markdown";
-let easyMDE;
-let currentContent = "";
-
-// 🧩 Markdown Editor 初期化
-function initMarkdownEditor(content = "") {
-  if (easyMDE) easyMDE.toTextArea(); // 既存破棄
-  easyMDE = new EasyMDE({
-    element: document.getElementById("content"),
-    initialValue: content,
-    spellChecker: false,
-    autosave: false,
-    placeholder: "ここにMarkdownを書きます…",
-    toolbar: [
-      "bold", "italic", "heading", "|",
-      "quote", "unordered-list", "ordered-list", "|",
-      "link", "image", "table", "|",
-      "preview", "side-by-side", "fullscreen"
-    ]
-  });
-
-  easyMDE.codemirror.on("change", () => updatePreview(easyMDE.value()));
-  updatePreview(content);
-}
-
-// 🧩 TinyMCE 初期化
-function initRichEditor(content = "") {
-  tinymce.remove(); // 重複防止
-  tinymce.init({
-    selector: "#content",
-    height: 500,
-    menubar: true,
-    plugins:
-      "advlist autolink lists link image charmap preview anchor " +
-      "searchreplace visualblocks code fullscreen insertdatetime media table help wordcount",
-    toolbar:
-      "undo redo | styles | bold italic underline forecolor backcolor | " +
-      "alignleft aligncenter alignright alignjustify | " +
-      "bullist numlist outdent indent | removeformat | link image | preview",
-    setup: (editor) => {
-      editor.on("init", () => editor.setContent(content));
-      editor.on("keyup change", () => updatePreview(editor.getContent()));
-    }
-  });
-  updatePreview(content);
-}
-
-// 🧠 プレビュー更新
-function updatePreview(content) {
-  if (mode === "markdown") {
-    previewEl.innerHTML = marked.parse(content || "");
-  } else {
-    previewEl.innerHTML = content || "";
-  }
-}
-
-// 🎛️ モード切り替え
-modeMarkdownBtn.addEventListener("click", () => {
-  mode = "markdown";
-  modeMarkdownBtn.classList.add("active");
-  modeRichBtn.classList.remove("active");
-  currentContent = tinymce.get("content")?.getContent() || "";
-  tinymce.remove();
-  initMarkdownEditor(currentContent);
+// ✅ TinyMCE初期化
+tinymce.init({
+  selector: "#editor",
+  height: 400,
+  menubar: false,
+  plugins: "link image lists table code",
+  toolbar: "undo redo | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image | code",
+  setup: (ed) => (editor = ed),
 });
 
-modeRichBtn.addEventListener("click", () => {
-  mode = "rich";
-  modeRichBtn.classList.add("active");
-  modeMarkdownBtn.classList.remove("active");
-  if (easyMDE) currentContent = easyMDE.value();
-  initRichEditor(currentContent);
-});
+const titleInput = document.getElementById("title");
+const saveBtn = document.getElementById("saveBtn");
+const previewBtn = document.getElementById("previewBtn");
+const preview = document.getElementById("preview");
 
-// 🧠 記事読み込み
-if (articleId) {
-  const { data } = await supabase.from("articles").select("*").eq("id", articleId).single();
-  if (data) {
-    titleEl.value = data.title;
-    currentContent = data.content || "";
-    mode = data.format || "markdown";
+// 🧠 記事読み込み（編集時）
+async function loadArticle() {
+  if (!articleId) return;
 
-    if (mode === "rich") {
-      modeRichBtn.classList.add("active");
-      modeMarkdownBtn.classList.remove("active");
-      initRichEditor(currentContent);
-    } else {
-      initMarkdownEditor(currentContent);
-    }
-  }
-} else {
-  initMarkdownEditor();
-}
-
-// 💾 保存処理
-document.getElementById("saveBtn").addEventListener("click", async () => {
-  const title = titleEl.value.trim();
-  let content = "";
-
-  if (mode === "markdown") {
-    content = easyMDE.value();
-  } else {
-    content = tinymce.get("content").getContent();
-  }
-
-  if (!title || !content) {
-    alert("タイトルと本文を入力してください。");
+  const { data, error } = await supabase.from("articles").select("*").eq("id", articleId).single();
+  if (error) {
+    console.error("読み込み失敗:", error);
     return;
   }
 
-  const payload = {
-    title,
-    content,
-    format: mode,
-    updated_at: new Date().toISOString(),
-  };
+  titleInput.value = data.title;
+  editor.setContent(data.content);
+}
+
+tinymce.on("AddEditor", async () => {
+  await loadArticle();
+});
+
+// 💾 保存
+saveBtn.addEventListener("click", async () => {
+  const title = titleInput.value.trim();
+  const content = editor.getContent();
+
+  if (!title || !content) {
+    alert("タイトルと内容を入力してください。");
+    return;
+  }
 
   let result;
   if (articleId) {
-    result = await supabase.from("articles").update(payload).eq("id", articleId);
+    result = await supabase.from("articles").update({ title, content, updated_at: new Date() }).eq("id", articleId);
   } else {
-    payload.created_at = new Date().toISOString();
-    result = await supabase.from("articles").insert([payload]);
+    result = await supabase.from("articles").insert([{ title, content, created_at: new Date(), updated_at: new Date() }]);
   }
 
   if (result.error) {
-    alert("保存エラー: " + result.error.message);
+    alert("保存に失敗しました: " + result.error.message);
   } else {
-    alert("✅ 保存しました！");
+    alert("保存しました！");
     window.location.href = "home.html";
   }
 });
 
-// 🔙 戻る
-document.getElementById("backBtn").addEventListener("click", () => {
-  window.location.href = "home.html";
+// 👁️ プレビュー
+previewBtn.addEventListener("click", () => {
+  const html = editor.getContent();
+  preview.innerHTML = html;
+  preview.style.display = "block";
 });
