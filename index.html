@@ -21,6 +21,7 @@
       align-items: center;
       padding: 1rem 2rem;
       background: #e5e7eb;
+      transition: opacity 0.4s ease;
     }
 
     header h1 {
@@ -43,10 +44,29 @@
       font-family: "Hiragino Mincho ProN", "游明朝", "MS Mincho", serif; /* ✨ 明朝体 */
       font-size: 2rem;
       color: #333;
+      transition: opacity 0.4s ease;
+    }
+
+    /* 🎭 ログイン前は非表示スタイル */
+    body.hide-ui header,
+    body.hide-ui main {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ローディング中のメッセージ */
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: "Hiragino Mincho ProN", "游明朝", "MS Mincho", serif;
+      font-size: 1.5rem;
+      color: #555;
     }
   </style>
 </head>
-<body>
+<body class="hide-ui">
   <header>
     <h1>My Wiki</h1>
     <a href="auth.html">ログイン／新規登録</a>
@@ -56,13 +76,26 @@
     <div>ようこそ</div>
   </main>
 
+  <div id="loading">読み込み中...</div>
+
   <script type="module">
     import { supabase } from "./js/api.js";
 
-    // ✅ ログイン済みなら記事一覧へ
-    const { data } = await supabase.auth.getSession();
-    if (data.session) {
-      window.location.href = "home.html"; // ← ログイン後のページへ遷移
+    const { data, error } = await supabase.auth.getSession();
+
+    // ローディング表示中はUI非表示
+    document.body.classList.add("hide-ui");
+
+    if (error) {
+      console.error("Supabase接続エラー:", error);
+      document.getElementById("loading").textContent = "接続エラー";
+    } else if (data.session) {
+      // 🔓 ログイン済みならホームへ
+      window.location.href = "home.html";
+    } else {
+      // 🔒 未ログインなら「ようこそ」を表示
+      document.body.classList.remove("hide-ui");
+      document.getElementById("loading").remove();
     }
   </script>
 </body>
