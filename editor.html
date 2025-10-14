@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wikiエディタ - My Wiki</title>
+  <style>
+    body {
+      font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
+      background-color: #f8f9fa;
+      color: #202122;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    header {
+      background-color: #eaecf0;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #a2a9b1;
+      text-align: center;
+    }
+
+    main {
+      padding: 2rem;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    select, input, textarea, button {
+      width: 100%;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      padding: 0.6rem;
+      box-sizing: border-box;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    textarea {
+      height: 80px;
+      resize: vertical;
+    }
+
+    button {
+      cursor: pointer;
+      background-color: #3366cc;
+      color: white;
+      border: none;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #254b9b;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .actions button {
+      flex: 1;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid #a2a9b1;
+      font-size: 0.9rem;
+      color: #555;
+      text-align: center;
+    }
+
+    .delete-btn {
+      background-color: #c9302c;
+    }
+
+    .delete-btn:hover {
+      background-color: #a52a2a;
+    }
+
+    .notice {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Wiki記事エディタ</h1>
+    <p><a href="index.html">← ホームへ戻る</a></p>
+  </header>
+
+  <main>
+    <div class="notice">
+      ⚙️ 編集結果は直接ファイルに保存されません。<br>
+      「JSONをダウンロード」ボタンで更新データを保存してください。
+    </div>
+
+    <h2>記事を選択または追加</h2>
+    <select id="articleSelect">
+      <option value="">新しい記事を作成</option>
+    </select>
+
+    <input type="text" id="title" placeholder="タイトル（必須）" />
+    <input type="text" id="description" placeholder="概要説明" />
+    <textarea id="overview" placeholder="概要"></textarea>
+    <textarea id="history" placeholder="歴史"></textarea>
+    <textarea id="features" placeholder="特徴"></textarea>
+    <textarea id="usage" placeholder="利用"></textarea>
+    <textarea id="evaluation" placeholder="評価"></textarea>
+
+    <div class="actions">
+      <button id="saveBtn">記事を保存</button>
+      <button class="delete-btn" id="deleteBtn">記事を削除</button>
+      <button id="downloadBtn">JSONをダウンロード</button>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 My Wiki</p>
+  </footer>
+
+  <script>
+    const select = document.getElementById("articleSelect");
+    const fields = {
+      title: document.getElementById("title"),
+      description: document.getElementById("description"),
+      overview: document.getElementById("overview"),
+      history: document.getElementById("history"),
+      features: document.getElementById("features"),
+      usage: document.getElementById("usage"),
+      evaluation: document.getElementById("evaluation")
+    };
+
+    let articles = [];
+
+    // JSON読み込み
+    fetch("articles.json")
+      .then(res => res.json())
+      .then(data => {
+        articles = data;
+        updateSelect();
+      })
+      .catch(() => alert("記事データを読み込めませんでした。"));
+
+    // セレクト更新
+    function updateSelect() {
+      select.innerHTML = '<option value="">新しい記事を作成</option>';
+      articles.forEach((a, i) => {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = a.title;
+        select.appendChild(option);
+      });
+    }
+
+    // 記事選択時に内容を反映
+    select.addEventListener("change", () => {
+      const index = select.value;
+      if (index === "") {
+        Object.values(fields).forEach(f => f.value = "");
+        return;
+      }
+      const article = articles[index];
+      Object.keys(fields).forEach(k => fields[k].value = article[k] || "");
+    });
+
+    // 保存ボタン
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      const newArticle = {};
+      Object.keys(fields).forEach(k => newArticle[k] = fields[k].value.trim());
+
+      if (!newArticle.title) {
+        alert("タイトルは必須です。");
+        return;
+      }
+
+      const existingIndex = articles.findIndex(a => a.title === newArticle.title);
+
+      if (existingIndex >= 0) {
+        // 上書き
+        articles[existingIndex] = newArticle;
+        alert("記事を更新しました。");
+      } else {
+        // 新規追加
+        articles.push(newArticle);
+        alert("新しい記事を追加しました。");
+      }
+
+      updateSelect();
+      select.value = articles.findIndex(a => a.title === newArticle.title);
+    });
+
+    // 削除ボタン
+    document.getElementById("deleteBtn").addEventListener("click", () => {
+      const index = select.value;
+      if (index === "") {
+        alert("削除する記事を選択してください。");
+        return;
+      }
+
+      const title = articles[index].title;
+      if (confirm(`「${title}」を削除しますか？`)) {
+        articles.splice(index, 1);
+        updateSelect();
+        Object.values(fields).forEach(f => f.value = "");
+        alert("記事を削除しました。");
+      }
+    });
+
+    // JSONダウンロード
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(articles, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "articles.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
