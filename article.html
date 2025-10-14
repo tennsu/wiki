@@ -39,12 +39,62 @@
     }
 
     main {
+      display: flex;
+      flex-direction: row;
+      gap: 2rem;
       padding: 2rem;
-      max-width: 900px;
+      max-width: 1200px;
       margin: auto;
+    }
+
+    .content {
+      flex: 3;
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      padding: 2rem;
+    }
+
+    .infobox {
+      flex: 1;
+      background: #fefefe;
+      border: 1px solid #a2a9b1;
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 0.95rem;
+      height: fit-content;
+    }
+
+    .infobox h2 {
+      text-align: center;
+      margin-top: 0;
+      border-bottom: 2px solid #3366cc;
+      padding-bottom: 0.3rem;
+    }
+
+    .infobox table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .infobox th, .infobox td {
+      padding: 0.3rem;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    .infobox th {
+      width: 40%;
+      color: #555;
+      background: #f6f8fa;
+    }
+
+    .meta {
+      color: #555;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.5rem;
     }
 
     h1, h2, h3 {
@@ -55,4 +105,136 @@
 
     pre {
       background: #f6f8fa;
-      padding:
+      padding: 0.8rem;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+
+    code {
+      background: #f0f0f0;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: "Consolas", monospace;
+    }
+
+    blockquote {
+      border-left: 4px solid #ccc;
+      margin: 1rem 0;
+      padding-left: 1rem;
+      color: #555;
+      background: #f9f9f9;
+    }
+
+    .not-found {
+      text-align: center;
+      padding: 3rem;
+      background: #fff3cd;
+      border: 1px solid #ffeeba;
+      border-radius: 8px;
+      width: 100%;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-top: 1rem;
+      background-color: #3366cc;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .back-btn:hover {
+      background-color: #254b9b;
+    }
+
+    footer {
+      text-align: center;
+      margin: 3rem 0 1rem;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        flex-direction: column;
+      }
+      .infobox {
+        order: -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="pageTitle">記事</h1>
+    <a href="index.html">🏠 ホームへ戻る</a>
+  </header>
+
+  <main id="mainContainer">
+    <div class="not-found">
+      <h2>記事が見つかりません。</h2>
+      <p>URLが間違っている可能性があります。</p>
+      <a class="back-btn" href="index.html">ホームへ戻る</a>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 My Wiki</p>
+  </footer>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const title = params.get("title");
+
+    if (!title) return;
+
+    fetch("articles.json")
+      .then(res => res.json())
+      .then(data => {
+        const article = data.find(a => a.title === title);
+        if (!article) return;
+
+        document.getElementById("pageTitle").textContent = article.title;
+
+        // インフォボックスHTML生成
+        let infoboxHTML = "";
+        if (article.infobox && Object.keys(article.infobox).length > 0) {
+          infoboxHTML = `
+            <aside class="infobox">
+              <h2>${article.title}</h2>
+              <table>
+                ${Object.entries(article.infobox)
+                  .map(([key, val]) => `<tr><th>${key}</th><td>${val}</td></tr>`)
+                  .join("")}
+              </table>
+            </aside>`;
+        }
+
+        // 本文表示
+        const mainContainer = document.getElementById("mainContainer");
+        mainContainer.innerHTML = `
+          ${infoboxHTML}
+          <article class="content">
+            <div class="meta">
+              <strong>${article.title}</strong><br>
+              ${article.description ? article.description : ""}
+              <br><small>最終更新: ${article.updatedAt ? new Date(article.updatedAt).toLocaleString() : "不明"}</small>
+            </div>
+            <div class="article-body">${marked.parse(article.markdown || "")}</div>
+          </article>
+        `;
+      })
+      .catch(() => {
+        const main = document.getElementById("mainContainer");
+        main.innerHTML = `
+          <div class="not-found">
+            <h2>記事データの読み込みに失敗しました。</h2>
+            <a class="back-btn" href="index.html">ホームへ戻る</a>
+          </div>
+        `;
+      });
+  </script>
+</body>
+</html>
