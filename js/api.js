@@ -8,8 +8,8 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 // ------------------------------------------------------------
 // 1️⃣ Supabase接続設定
 // ------------------------------------------------------------
-const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";  // ← あなたのURLに変更
-const SUPABASE_KEY = "YOUR_PUBLIC_ANON_KEY";               // ← あなたのanon keyに変更
+const SUPABASE_URL = "https://wosacylvqpjcrpzbnuhv.supabase.co";  // ← あなたのURLに変更
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indvc2FjeWx2cXBqY3JwemJudWh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MDU1MDYsImV4cCI6MjA3NTk4MTUwNn0.9QegaNoCIwwVKZ8g1-GR0n2ahMurqCk2D5p3zO1fOBE";               // ← あなたのanon keyに変更
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
