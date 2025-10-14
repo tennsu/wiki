@@ -3,104 +3,82 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>記事を編集 - My Wiki</title>
-  <script type="module" src="js/editor.js"></script>
+  <title>記事エディター - My Wiki</title>
+
+  <!-- TinyMCE -->
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+
+  <!-- EasyMDE -->
+  <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
+  <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+
+  <script type="module" src="./js/editor.js"></script>
+
   <style>
     body {
-      font-family: "Hiragino Sans", "Meiryo", sans-serif;
-      background: #f9fafb;
+      font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
+      background: #f8f9fa;
       margin: 0;
       padding: 2rem;
-      color: #111;
     }
+    h1 { text-align: center; margin-bottom: 1rem; }
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #e5e7eb;
-      padding: 1rem 2rem;
-      border-radius: 10px;
-    }
-
-    header a {
-      text-decoration: none;
-      color: #2563eb;
-      font-weight: bold;
-    }
-
-    main {
-      max-width: 800px;
-      margin: 2rem auto;
-      background: white;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    input, textarea {
-      width: 100%;
+    .mode-select {
+      text-align: center;
       margin-bottom: 1rem;
-      padding: 0.8rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+    }
+
+    select {
       font-size: 1rem;
-      font-family: inherit;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
     }
 
-    textarea {
-      height: 300px;
-      resize: vertical;
-    }
-
-    .button-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
+    input {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 0.5rem 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
     }
 
     button {
       padding: 0.8rem 1.5rem;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
+      background: #007bff;
+      color: white;
       font-size: 1rem;
       cursor: pointer;
+      margin-top: 1rem;
     }
 
-    #saveBtn {
-      background: #2563eb;
-      color: white;
-    }
+    button:hover { background: #0056b3; }
 
-    #saveBtn:hover {
-      background: #1d4ed8;
+    #backBtn {
+      background: #6c757d;
+      margin-left: 0.5rem;
     }
-
-    #historyBtn {
-      background: #9ca3af;
-      color: white;
-    }
-
-    #historyBtn:hover {
-      background: #6b7280;
-    }
-
   </style>
 </head>
 <body>
-  <header>
-    <h1>記事を編集</h1>
-    <a href="home.html">← 戻る</a>
-  </header>
+  <h1>記事エディター</h1>
 
-  <main>
-    <input id="title" type="text" placeholder="タイトルを入力" />
-    <textarea id="content" placeholder="本文を入力 (Markdown対応)"></textarea>
+  <div class="mode-select">
+    <label for="mode">エディタモード：</label>
+    <select id="mode">
+      <option value="tinymce">リッチ（TinyMCE）</option>
+      <option value="easymde">Markdown（EasyMDE）</option>
+    </select>
+  </div>
 
-    <div class="button-row">
-      <button id="saveBtn">💾 保存</button>
-      <button id="historyBtn">📜 編集履歴を見る</button>
-    </div>
-  </main>
+  <input type="text" id="title" placeholder="タイトルを入力" />
+  <textarea id="content"></textarea>
+
+  <div>
+    <button id="saveBtn">💾 保存</button>
+    <button id="backBtn">← 戻る</button>
+  </div>
 </body>
 </html>
