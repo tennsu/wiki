@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>記事 - My Wiki</title>
 
-  <!-- Marked.js（Markdownレンダリング） -->
+  <!-- Marked.js（Markdown対応） -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="js/api.js"></script>
 
   <style>
     body {
@@ -30,6 +31,10 @@
       font-size: 1.2rem;
       margin: 0;
     }
+    header a {
+      color: #007bff;
+      text-decoration: none;
+    }
     main {
       padding: 2rem;
       max-width: 900px;
@@ -49,20 +54,42 @@
     }
     .infobox table {
       width: 100%;
+      border-collapse: collapse;
+    }
+    .infobox th, .infobox td {
+      padding: 0.3rem;
+      border-bottom: 1px solid #ddd;
     }
     .infobox th {
       text-align: left;
-      width: 40%;
       color: #555;
+      width: 40%;
     }
-    .infobox td {
-      color: #000;
+    .article-body {
+      clear: both;
     }
     pre {
       background: #f0f0f0;
       padding: 0.5rem;
       border-radius: 6px;
       overflow-x: auto;
+    }
+    .article-meta {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 1.5rem;
+    }
+    .edit-btn {
+      background: #007bff;
+      color: white;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      text-decoration: none;
+      float: right;
+      margin-top: -1.5rem;
+    }
+    .edit-btn:hover {
+      background: #0056b3;
     }
     footer {
       text-align: center;
@@ -87,56 +114,56 @@
     <p>&copy; 2025 My Wiki</p>
   </footer>
 
-  <script>
-    // === Supabase 設定 ===
-    const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
-    const SUPABASE_KEY = "YOUR_PUBLIC_ANON_KEY";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  <script type="module">
+    import { getArticle } from "./js/api.js";
 
-    // === 記事をロード ===
     const params = new URLSearchParams(window.location.search);
     const title = params.get("title");
 
+    const content = document.getElementById("content");
+    const pageTitle = document.getElementById("pageTitle");
+
     async function loadArticle() {
       if (!title) {
-        document.getElementById("content").innerHTML = "<p>記事タイトルが指定されていません。</p>";
+        content.innerHTML = "<p>記事タイトルが指定されていません。</p>";
         return;
       }
 
-      const { data, error } = await supabase
-        .from("articles")
-        .select("*")
-        .eq("title", title)
-        .single();
+      try {
+        const article = await getArticle(title);
 
-      if (error || !data) {
-        document.getElementById("content").innerHTML = "<p>記事が見つかりません。</p>";
-        console.error(error);
-        return;
-      }
+        document.title = `${article.title} - My Wiki`;
+        pageTitle.textContent = article.title;
 
-      // Infoboxを整形
-      let infoboxHTML = "";
-      if (data.infobox) {
-        const info = typeof data.infobox === "string" ? JSON.parse(data.infobox) : data.infobox;
-        infoboxHTML = `
-          <div class="infobox">
-            <table>
-              ${Object.entries(info).map(([key, val]) => `<tr><th>${key}</th><td>${val}</td></tr>`).join("")}
-            </table>
+        // Infobox処理
+        let infoboxHTML = "";
+        if (article.infobox) {
+          const info = typeof article.infobox === "string"
+            ? JSON.parse(article.infobox)
+            : article.infobox;
+          infoboxHTML = `
+            <div class="infobox">
+              <table>
+                ${Object.entries(info).map(([key, val]) =>
+                  `<tr><th>${key}</th><td>${val}</td></tr>`
+                ).join("")}
+              </table>
+            </div>
+          `;
+        }
+
+        content.innerHTML = `
+          <a class="edit-btn" href="editor.html?title=${encodeURIComponent(article.title)}">✏ 編集</a>
+          ${infoboxHTML}
+          <div class="article-body">${marked.parse(article.markdown || "")}</div>
+          <div class="article-meta">
+            <p>最終更新: ${new Date(article.updated_at).toLocaleString()}</p>
           </div>
         `;
+      } catch (e) {
+        console.error(e);
+        content.innerHTML = "<p>記事の読み込みに失敗しました。</p>";
       }
-
-      // 本文表示
-      document.title = data.title + " - My Wiki";
-      document.getElementById("pageTitle").textContent = data.title;
-
-      document.getElementById("content").innerHTML = `
-        ${infoboxHTML}
-        <div class="article-body">${marked.parse(data.markdown || "")}</div>
-        <p style="font-size:0.9rem;color:#666;">最終更新: ${new Date(data.updated_at).toLocaleString()}</p>
-      `;
     }
 
     loadArticle();
