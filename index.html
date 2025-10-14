@@ -35,6 +35,16 @@
       margin-bottom: 2rem;
     }
 
+    input[type="text"] {
+      width: 100%;
+      padding: 0.6rem;
+      font-size: 1rem;
+      border: 1px solid #a2a9b1;
+      border-radius: 6px;
+      box-sizing: border-box;
+      margin-bottom: 1rem;
+    }
+
     .article-list {
       list-style: none;
       padding: 0;
@@ -42,11 +52,22 @@
 
     .article-list li {
       margin: 0.8rem 0;
+      background-color: #fff;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+      transition: 0.2s;
+    }
+
+    .article-list li:hover {
+      background-color: #f0f7ff;
+      border-color: #bcd3f7;
     }
 
     a {
       color: #0645ad;
       text-decoration: none;
+      font-weight: 500;
     }
 
     a:hover {
@@ -76,11 +97,14 @@
     </section>
 
     <section>
-      <h2>記事一覧</h2>
-      <ul class="article-list">
+      <h2>記事検索</h2>
+      <input type="text" id="searchBar" placeholder="キーワードで検索..." />
+      <ul class="article-list" id="articleList">
         <li><a href="article.html?title=ChatGPT">ChatGPTとは</a></li>
         <li><a href="article.html?title=JavaScript">JavaScriptの基礎</a></li>
         <li><a href="article.html?title=HTML">HTML入門</a></li>
+        <li><a href="article.html?title=CSS">CSSの基本</a></li>
+        <li><a href="article.html?title=AI">AIの歴史と応用</a></li>
       </ul>
     </section>
   </main>
@@ -88,5 +112,21 @@
   <footer>
     <p>&copy; 2025 My Wiki</p>
   </footer>
+
+  <script>
+    // 検索バー機能
+    const searchBar = document.getElementById("searchBar");
+    const articleList = document.getElementById("articleList");
+    const articles = articleList.getElementsByTagName("li");
+
+    searchBar.addEventListener("input", () => {
+      const query = searchBar.value.toLowerCase();
+
+      for (let article of articles) {
+        const text = article.textContent.toLowerCase();
+        article.style.display = text.includes(query) ? "" : "none";
+      }
+    });
+  </script>
 </body>
 </html>
