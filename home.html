@@ -1,45 +1,162 @@
-<script type="module">
-  console.log("✅ home.html 読み込み開始");
-
-  import { supabase, requireAuth } from "./js/api.js";
-
-  // 🔒 ログインチェック
-  await requireAuth();
-
-  const list = document.getElementById("articles");
-  const emptyMsg = document.getElementById("emptyMsg");
-
-  async function loadArticles() {
-    const { data, error } = await supabase
-      .from("articles")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      list.innerHTML = `<li>読み込みエラー: ${error.message}</li>`;
-      return;
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ホーム - My Wiki</title>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="./js/api.js"></script>
+  <style>
+    body {
+      font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
 
-    if (!data || data.length === 0) {
-      emptyMsg.style.display = "block";
-      return;
+    header {
+      background: #e5e7eb;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ddd;
     }
 
-    list.innerHTML = data
-      .map(a => `<li><a href="article.html?id=${a.id}">${a.title || "（無題）"}</a></li>`)
-      .join("");
-  }
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
 
-  await loadArticles();
+    header nav button {
+      margin-left: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      font-size: 0.9rem;
+    }
 
-  // ✍️ 新規記事ボタン
-  document.getElementById("newBtn").addEventListener("click", () => {
-    window.location.href = "new.html";
-  });
+    header nav button:hover {
+      background: #0056b3;
+    }
 
-  // 🚪 ログアウト
-  document.getElementById("logoutBtn").addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    window.location.href = "index.html";
-  });
-</script>
+    main {
+      flex: 1;
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 0.5rem;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: white;
+      margin-bottom: 0.5rem;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    li a {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    li a:hover {
+      text-decoration: underline;
+    }
+
+    #emptyMsg {
+      text-align: center;
+      color: #555;
+      margin-top: 2rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📚 My Wiki</h1>
+    <nav>
+      <button id="newBtn">＋ 新規作成</button>
+      <button id="historyBtn">🕓 履歴</button>
+      <button id="logoutBtn">🚪 ログアウト</button>
+    </nav>
+  </header>
+
+  <main>
+    <h2>記事一覧</h2>
+    <ul id="articles"></ul>
+    <div id="emptyMsg">まだ記事がありません。</div>
+  </main>
+
+  <script type="module">
+    import { supabase, requireAuth } from "./js/api.js";
+
+    console.log("✅ home.html 読み込み開始");
+
+    // 🔒 ログインチェック
+    await requireAuth();
+
+    const list = document.getElementById("articles");
+    const emptyMsg = document.getElementById("emptyMsg");
+
+    // 📰 記事一覧を取得
+    async function loadArticles() {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        list.innerHTML = `<li>読み込みエラー: ${error.message}</li>`;
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        emptyMsg.style.display = "block";
+        return;
+      }
+
+      list.innerHTML = data
+        .map(a => `<li><a href="article.html?id=${a.id}">${a.title || "（無題）"}</a></li>`)
+        .join("");
+    }
+
+    await loadArticles();
+
+    // ✍️ 新規記事作成
+    document.getElementById("newBtn").addEventListener("click", () => {
+      window.location.href = "new.html";
+    });
+
+    // 🕓 編集履歴
+    document.getElementById("historyBtn").addEventListener("click", () => {
+      window.location.href = "history.html";
+    });
+
+    // 🚪 ログアウト
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
