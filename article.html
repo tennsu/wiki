@@ -2,89 +2,95 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>記事閲覧 - My Wiki</title>
-  <script type="module" src="js/api.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>記事 - My Wiki</title>
+
+  <!-- ✅ Markdown → HTML変換用 -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- ✅ Supabase -->
+  <script type="module" src="./js/article.js"></script>
+
   <style>
     body {
-      font-family: "Hiragino Sans", sans-serif;
-      background: #f8f9fa;
+      font-family: "Hiragino Sans", "Meiryo", sans-serif;
+      background: #f9fafb;
       margin: 0;
+      padding: 2rem;
+      color: #222;
     }
+
     header {
-      background: #e5e7eb;
-      padding: 1rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 2rem;
     }
-    main {
-      padding: 2rem;
-      max-width: 800px;
-      margin: auto;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
+
     h1 {
-      margin-top: 0;
+      font-size: 1.8rem;
+      margin: 0;
+      color: #111;
     }
-    .content {
-      line-height: 1.8;
-    }
-    #editBtn {
-      background: #2563eb;
+
+    .btns button {
+      background: #007bff;
       color: white;
       border: none;
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1rem;
       border-radius: 6px;
       cursor: pointer;
-      margin-top: 1rem;
+      margin-left: 0.5rem;
+    }
+    .btns button:hover {
+      background: #0056b3;
+    }
+    #backBtn {
+      background: #6c757d;
+    }
+
+    main {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    #articleContent {
+      line-height: 1.8;
+      margin-top: 1.5rem;
+    }
+
+    #articleContent img {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+
+    #articleContent h2, #articleContent h3 {
+      margin-top: 1.5rem;
+    }
+
+    #info {
+      color: #555;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>My Wiki</h1>
-    <a href="home.html">🏠 ホームへ</a>
+    <h1 id="articleTitle">読み込み中...</h1>
+    <div class="btns">
+      <button id="editBtn">✏️ 編集</button>
+      <button id="backBtn">← 戻る</button>
+    </div>
   </header>
 
   <main>
-    <h2 id="title">読み込み中...</h2>
-    <div id="content" class="content"></div>
-    <button id="editBtn" style="display:none;">✏️ 編集する</button>
+    <div id="info"></div>
+    <div id="articleContent"></div>
   </main>
-
-  <script type="module">
-    import { supabase, requireAuth } from "./js/api.js";
-
-    await requireAuth();
-
-    // URLパラメータから記事IDを取得
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
-
-    if (!id) {
-      document.getElementById("title").textContent = "記事が見つかりません。";
-      throw new Error("記事IDが指定されていません。");
-    }
-
-    // 記事データ取得
-    const { data, error } = await supabase.from("articles").select("*").eq("id", id).single();
-
-    if (error || !data) {
-      document.getElementById("title").textContent = "記事の読み込みに失敗しました。";
-      console.error(error);
-    } else {
-      document.getElementById("title").textContent = data.title || "（無題）";
-      document.getElementById("content").innerHTML = marked.parse(data.content || "");
-
-      // 編集ボタン表示
-      document.getElementById("editBtn").style.display = "inline-block";
-      document.getElementById("editBtn").addEventListener("click", () => {
-        window.location.href = `editor.html?id=${id}`;
-      });
-    }
-  </script>
 </body>
 </html>
