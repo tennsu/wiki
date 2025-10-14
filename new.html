@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>新規記事作成 - My Wiki</title>
+  <style>
+    body {
+      font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
+      background-color: #f8f9fa;
+      color: #202122;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    header {
+      background-color: #eaecf0;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #a2a9b1;
+      text-align: center;
+    }
+
+    main {
+      padding: 2rem;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      padding: 0.6rem;
+      box-sizing: border-box;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    textarea {
+      height: 80px;
+      resize: vertical;
+    }
+
+    button {
+      cursor: pointer;
+      background-color: #3366cc;
+      color: white;
+      border: none;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #254b9b;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid #a2a9b1;
+      font-size: 0.9rem;
+      color: #555;
+      text-align: center;
+    }
+
+    .notice {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>新しい記事を作成</h1>
+    <p><a href="index.html">← ホームへ戻る</a> | <a href="editor.html">🛠 編集ページへ</a></p>
+  </header>
+
+  <main>
+    <div class="notice">
+      ⚙️ 作成した記事はブラウザ上に保存されます。<br>
+      「JSONをダウンロード」ボタンでデータを保存してください。
+    </div>
+
+    <input type="text" id="title" placeholder="タイトル（必須）" />
+    <input type="text" id="description" placeholder="概要説明" />
+    <textarea id="overview" placeholder="概要"></textarea>
+    <textarea id="history" placeholder="歴史"></textarea>
+    <textarea id="features" placeholder="特徴"></textarea>
+    <textarea id="usage" placeholder="利用"></textarea>
+    <textarea id="evaluation" placeholder="評価"></textarea>
+
+    <button id="addBtn">記事を追加</button>
+    <button id="downloadBtn">JSONをダウンロード</button>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 My Wiki</p>
+  </footer>
+
+  <script>
+    let articles = [];
+
+    // JSON読み込み
+    fetch("articles.json")
+      .then(res => res.json())
+      .then(data => {
+        articles = data;
+      })
+      .catch(() => alert("記事データを読み込めませんでした。"));
+
+    // 新規追加
+    document.getElementById("addBtn").addEventListener("click", () => {
+      const newArticle = {
+        title: document.getElementById("title").value.trim(),
+        description: document.getElementById("description").value.trim(),
+        overview: document.getElementById("overview").value.trim(),
+        history: document.getElementById("history").value.trim(),
+        features: document.getElementById("features").value.trim(),
+        usage: document.getElementById("usage").value.trim(),
+        evaluation: document.getElementById("evaluation").value.trim(),
+      };
+
+      if (!newArticle.title) {
+        alert("タイトルは必須です。");
+        return;
+      }
+
+      const exists = articles.find(a => a.title === newArticle.title);
+      if (exists) {
+        alert("同じタイトルの記事が既に存在します。");
+        return;
+      }
+
+      articles.push(newArticle);
+      localStorage.setItem("wiki_articles", JSON.stringify(articles));
+      alert("記事を追加しました！");
+      Object.values(document.querySelectorAll("input, textarea")).forEach(el => el.value = "");
+    });
+
+    // JSONダウンロード
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(articles, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "articles.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
