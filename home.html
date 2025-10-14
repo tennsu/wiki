@@ -8,63 +8,139 @@
     body {
       margin: 0;
       background: #f3f4f6;
-      font-family: sans-serif;
+      font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
     }
+
     header {
       background: #e5e7eb;
-      padding: 1rem;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+
     header h1 {
       margin: 0;
-      font-size: 1.3rem;
+      font-size: 1.4rem;
     }
-    header button {
-      background: #dc2626;
+
+    .btn {
+      background: #2563eb;
       color: white;
       border: none;
       border-radius: 6px;
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1rem;
       cursor: pointer;
+      font-size: 0.95rem;
+      transition: 0.2s;
     }
+
+    .btn:hover {
+      background: #1e40af;
+    }
+
+    #logoutBtn {
+      background: #dc2626;
+      margin-left: 0.5rem;
+    }
+
+    #logoutBtn:hover {
+      background: #b91c1c;
+    }
+
     main {
       padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      margin-top: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      margin-bottom: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    li a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    li a:hover {
+      text-decoration: underline;
+    }
+
+    .empty {
+      color: #888;
+      text-align: center;
+      margin-top: 2rem;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>My Wiki</h1>
-    <button id="logoutBtn">ログアウト</button>
+    <div>
+      <button class="btn" id="newBtn">＋ 新しい記事</button>
+      <button class="btn" id="logoutBtn">ログアウト</button>
+    </div>
   </header>
 
   <main>
     <h2>記事一覧</h2>
     <ul id="articles"></ul>
+    <p class="empty" id="emptyMsg" style="display:none;">まだ記事がありません。</p>
   </main>
 
   <script type="module">
     import { supabase, requireAuth } from "./js/api.js";
 
-    // ログイン確認
+    // ✅ ログイン必須チェック
     await requireAuth();
 
-    // 記事取得
+    const list = document.getElementById("articles");
+    const emptyMsg = document.getElementById("emptyMsg");
+
+    // 📰 記事読み込み
     async function loadArticles() {
-      const { data, error } = await supabase.from("articles").select("*");
-      const list = document.getElementById("articles");
+      const { data, error } = await supabase.from("articles").select("*").order("created_at", { ascending: false });
       if (error) {
         list.innerHTML = `<li>読み込みエラー: ${error.message}</li>`;
         return;
       }
-      list.innerHTML = data.map(a => `<li><a href="article.html?id=${a.id}">${a.title}</a></li>`).join("");
+
+      if (!data || data.length === 0) {
+        emptyMsg.style.display = "block";
+        return;
+      }
+
+      list.innerHTML = data
+        .map(a => `<li><a href="article.html?id=${a.id}">${a.title || "（無題）"}</a></li>`)
+        .join("");
     }
 
     await loadArticles();
 
-    // ログアウト処理
+    // ✍️ 新規記事ボタン
+    document.getElementById("newBtn").addEventListener("click", () => {
+      window.location.href = "editor.html";
+    });
+
+    // 🚪 ログアウト
     document.getElementById("logoutBtn").addEventListener("click", async () => {
       await supabase.auth.signOut();
       window.location.href = "index.html";
