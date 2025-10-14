@@ -2,75 +2,141 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>記事を作成 - My Wiki</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <title>新規記事作成 - My Wiki</title>
   <script type="module" src="js/api.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    body { font-family: "Hiragino Sans", "Meiryo", sans-serif; margin: 0; background: #f8f9fa; }
-    main { max-width: 900px; margin: auto; padding: 2rem; }
-    input, textarea { width: 100%; margin-bottom: 1rem; padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc; }
-    button { padding: 0.6rem 1rem; border: none; border-radius: 6px; background: #007bff; color: white; cursor: pointer; }
-    button:hover { background: #0056b3; }
-    .preview img { max-width: 200px; border-radius: 8px; margin-bottom: 1rem; }
+    body {
+      font-family: "Hiragino Sans", sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+    }
+    header {
+      background: #e5e7eb;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    main {
+      display: flex;
+      gap: 2rem;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .editor, .preview {
+      flex: 1;
+      background: white;
+      border-radius: 10px;
+      padding: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    textarea, input {
+      width: 100%;
+      padding: 0.8rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+    textarea {
+      height: 400px;
+      font-family: monospace;
+      resize: vertical;
+    }
+    button {
+      background: #16a34a;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover {
+      background: #15803d;
+    }
+    .preview h2 {
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 0.3rem;
+    }
+    #status {
+      margin-left: 1rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
   </style>
 </head>
 <body>
+  <header>
+    <h1>📝 新しい記事</h1>
+    <div>
+      <button id="saveBtn">💾 保存</button>
+      <span id="status"></span>
+      <a href="home.html" style="margin-left:1rem;">🏠 ホームへ</a>
+    </div>
+  </header>
+
   <main>
-    <h1>記事を作成</h1>
-    <input type="text" id="title" placeholder="タイトル">
-    <input type="text" id="description" placeholder="説明文">
-
-    <h3>Infobox（画像つき）</h3>
-    <input type="file" id="imageUpload">
-    <img id="previewImg" style="display:none;">
-    <textarea id="infoboxJson" placeholder='例：{"開発者":"Guido van Rossum"}'></textarea>
-
-    <h3>本文 (Markdown)</h3>
-    <textarea id="markdownInput" placeholder="Markdown本文..."></textarea>
-
-    <button id="saveBtn">保存</button>
+    <div class="editor">
+      <input type="text" id="title" placeholder="タイトルを入力" />
+      <textarea id="content" placeholder="Markdown本文を入力..."></textarea>
+    </div>
+    <div class="preview">
+      <h2>プレビュー</h2>
+      <div id="previewContent" style="line-height:1.8;"></div>
+    </div>
   </main>
 
   <script type="module">
-    import { uploadImage, addArticle } from "./js/api.js";
+    import { supabase, requireAuth } from "./js/api.js";
+    await requireAuth();
 
-    const imgInput = document.getElementById("imageUpload");
-    const previewImg = document.getElementById("previewImg");
-    let uploadedUrl = null;
+    const titleEl = document.getElementById("title");
+    const contentEl = document.getElementById("content");
+    const previewEl = document.getElementById("previewContent");
+    const statusEl = document.getElementById("status");
 
-    // 画像選択で即アップロード
-    imgInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const url = await uploadImage(file);
-      uploadedUrl = url;
-      previewImg.src = url;
-      previewImg.style.display = "block";
-      alert("画像アップロード完了！");
+    // Markdownプレビュー
+    contentEl.addEventListener("input", () => {
+      previewEl.innerHTML = marked.parse(contentEl.value);
     });
 
+    // 保存処理（新規作成）
     document.getElementById("saveBtn").addEventListener("click", async () => {
-      const infobox = JSON.parse(document.getElementById("infoboxJson").value || "{}");
-      if (uploadedUrl) infobox["画像"] = uploadedUrl; // 🔥 画像URLをinfoboxに追加
+      const title = titleEl.value.trim();
+      const content = contentEl.value.trim();
 
-      const article = {
-        title: document.getElementById("title").value,
-        description: document.getElementById("description").value,
-        markdown: document.getElementById("markdownInput").value,
-        infobox: infobox,
-      };
+      if (!title || !content) {
+        alert("タイトルと本文を入力してください。");
+        return;
+      }
 
-      try {
-        await addArticle(article);
-        alert("記事を作成しました！");
-        window.location.href = "index.html";
-      } catch (err) {
-        console.error(err);
-        alert("作成に失敗しました");
+      statusEl.textContent = "保存中...";
+
+      const { data: user } = await supabase.auth.getUser();
+
+      const { data, error } = await supabase
+        .from("articles")
+        .insert([
+          {
+            title,
+            content,
+            user_id: user.user?.id,
+            created_at: new Date(),
+            updated_at: new Date(),
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        alert("保存に失敗しました: " + error.message);
+        statusEl.textContent = "エラー";
+      } else {
+        statusEl.textContent = "保存完了";
+        window.location.href = `article.html?id=${data.id}`;
       }
     });
   </script>
