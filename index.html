@@ -1,8 +1,71 @@
-<script type="module">
-  import { supabase } from "./js/api.js";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Wiki</title>
+  <script type="module" src="js/api.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #f3f4f6;
+      color: #111;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
 
-  const { data } = await supabase.auth.getSession();
-  if (data.session) {
-    window.location.href = "home.html";
-  }
-</script>
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background: #e5e7eb;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    header a {
+      text-decoration: none;
+      color: #2563eb;
+      font-size: 0.9rem;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Hiragino Mincho ProN", "游明朝", "MS Mincho", serif;
+      font-size: 2rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Wiki</h1>
+    <a href="auth.html">ログイン／新規登録</a>
+  </header>
+
+  <main>
+    <div>ようこそ</div>
+  </main>
+
+  <script type="module">
+    import { supabase } from "./js/api.js";
+
+    // ✅ Supabaseでログイン状態を確認
+    const { data } = await supabase.auth.getSession();
+
+    if (data.session) {
+      // ✅ ログイン済み → home.htmlへ
+      window.location.href = "home.html";
+    }
+  </script>
+</body>
+</html>
