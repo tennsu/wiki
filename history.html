@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>編集履歴 - My Wiki</title>
+  <script type="module" src="js/history.js"></script>
+  <style>
+    body {
+      font-family: "Hiragino Sans", "Meiryo", sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 1rem;
+      color: #111;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #e5e7eb;
+      padding: 1rem 2rem;
+      border-radius: 10px;
+    }
+
+    header a {
+      text-decoration: none;
+      color: #2563eb;
+      font-weight: bold;
+    }
+
+    .history-item {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .history-item h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .diff {
+      background: #f1f5f9;
+      padding: 0.5rem;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+
+    .added {
+      background-color: #dcfce7;
+    }
+
+    .removed {
+      background-color: #fee2e2;
+      text-decoration: line-through;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>編集履歴</h1>
+    <a href="#" id="backBtn">← 記事に戻る</a>
+  </header>
+
+  <main>
+    <div id="history-list"></div>
+  </main>
+</body>
+</html>
