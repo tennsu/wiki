@@ -3,82 +3,125 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>記事エディター - My Wiki</title>
+  <title>記事エディタ - My Wiki</title>
 
-  <!-- TinyMCE -->
-  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
-
-  <!-- EasyMDE -->
+  <!-- ✅ EasyMDE（Markdown） -->
   <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
   <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+
+  <!-- ✅ TinyMCE（リッチテキスト） -->
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+
+  <!-- ✅ Markdown → HTML変換用 -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <script type="module" src="./js/editor.js"></script>
 
   <style>
     body {
-      font-family: "Helvetica Neue", "Hiragino Sans", "Meiryo", sans-serif;
+      font-family: "Hiragino Sans", "Meiryo", sans-serif;
       background: #f8f9fa;
       margin: 0;
       padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    h1 { text-align: center; margin-bottom: 1rem; }
-
-    .mode-select {
+    h1 {
       text-align: center;
       margin-bottom: 1rem;
     }
-
-    select {
-      font-size: 1rem;
-      padding: 0.3rem 0.6rem;
-      border-radius: 6px;
+    .editor-box {
+      width: 95%;
+      max-width: 1000px;
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      gap: 2rem;
     }
-
+    .editor-left, .editor-right {
+      flex: 1;
+    }
+    #preview {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 1rem;
+      min-height: 500px;
+      background: #fefefe;
+      overflow-y: auto;
+      font-family: "Hiragino Mincho ProN", "MS Mincho", serif;
+    }
     input {
       width: 100%;
       padding: 0.8rem;
-      margin: 0.5rem 0;
+      margin-bottom: 1rem;
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 1rem;
     }
-
-    button {
-      padding: 0.8rem 1.5rem;
-      border: none;
-      border-radius: 6px;
-      background: #007bff;
-      color: white;
-      font-size: 1rem;
-      cursor: pointer;
+    .btns {
+      text-align: center;
       margin-top: 1rem;
     }
-
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 0.8rem 1.4rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 0 0.5rem;
+    }
     button:hover { background: #0056b3; }
-
-    #backBtn {
-      background: #6c757d;
-      margin-left: 0.5rem;
+    #backBtn { background: #6c757d; }
+    .mode-select {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .mode-select button {
+      background: #e2e8f0;
+      color: #333;
+    }
+    .mode-select button.active {
+      background: #007bff;
+      color: #fff;
+    }
+    .preview-header {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: #333;
     }
   </style>
 </head>
 <body>
-  <h1>記事エディター</h1>
+  <h1>📝 記事エディタ</h1>
 
-  <div class="mode-select">
-    <label for="mode">エディタモード：</label>
-    <select id="mode">
-      <option value="tinymce">リッチ（TinyMCE）</option>
-      <option value="easymde">Markdown（EasyMDE）</option>
-    </select>
-  </div>
+  <div class="editor-box">
+    <div class="editor-left">
+      <div class="mode-select">
+        <button id="modeMarkdown" class="active">Markdown</button>
+        <button id="modeRich">リッチテキスト</button>
+      </div>
 
-  <input type="text" id="title" placeholder="タイトルを入力" />
-  <textarea id="content"></textarea>
+      <input type="text" id="title" placeholder="タイトルを入力..." />
+      <textarea id="content"></textarea>
 
-  <div>
-    <button id="saveBtn">💾 保存</button>
-    <button id="backBtn">← 戻る</button>
+      <div class="btns">
+        <button id="saveBtn">💾 保存</button>
+        <button id="backBtn">← 戻る</button>
+      </div>
+    </div>
+
+    <div class="editor-right">
+      <div class="preview-header">🔍 プレビュー</div>
+      <div id="preview">(ここにプレビューが表示されます)</div>
+    </div>
   </div>
 </body>
 </html>
