@@ -2,105 +2,68 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Wiki ホーム</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <title>My Wiki</title>
   <script type="module" src="js/api.js"></script>
-
   <style>
     body {
-      font-family: "Hiragino Sans", "Meiryo", sans-serif;
       margin: 0;
-      background: #f8f9fa;
+      background: #f3f4f6;
+      color: #111;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
+
     header {
-      background: #eaecf0;
-      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-    }
-    header a {
-      color: #007bff;
-      text-decoration: none;
-    }
-    main {
       padding: 1rem 2rem;
-      max-width: 800px;
-      margin: auto;
+      background: #e5e7eb;
     }
-    article {
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: bold;
     }
-    .actions {
-      margin-top: 1rem;
-      text-align: right;
+
+    header a {
+      text-decoration: none;
+      color: #2563eb;
+      font-size: 0.9rem;
     }
-    button {
-      border: none;
-      border-radius: 6px;
-      padding: 0.5rem 1rem;
-      background: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Hiragino Mincho ProN", "游明朝", "MS Mincho", serif; /* ✨ 明朝体 */
+      font-size: 2rem;
+      color: #333;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>My Wiki</h1>
-    <div id="authArea"></div>
+    <a href="auth.html">ログイン／新規登録</a>
   </header>
 
   <main>
-    <div id="articles"></div>
+    <div>ようこそ</div>
   </main>
 
   <script type="module">
-    import { supabase, getArticles } from "./js/api.js";
+    import { supabase } from "./js/api.js";
 
-    const articlesDiv = document.getElementById("articles");
-    const authArea = document.getElementById("authArea");
-
-    async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        authArea.innerHTML = `
-          <span>${session.user.email}</span>
-          <button id="logoutBtn">ログアウト</button>
-          <a href="new.html" style="margin-left:1rem;">📝 新規作成</a>
-        `;
-        document.getElementById("logoutBtn").addEventListener("click", async () => {
-          await supabase.auth.signOut();
-          location.reload();
-        });
-      } else {
-        authArea.innerHTML = `<a href="auth.html">ログイン / 新規登録</a>`;
-      }
+    // ✅ ログイン済みなら記事一覧へ
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      window.location.href = "home.html"; // ← ログイン後のページへ遷移
     }
-
-    async function loadArticles() {
-      const data = await getArticles();
-      articlesDiv.innerHTML = data.map(a => `
-        <article>
-          <h2><a href="article.html?title=${encodeURIComponent(a.title)}">${a.title}</a></h2>
-          <p>${a.description || ""}</p>
-          <div class="actions">
-            <a href="editor.html?title=${encodeURIComponent(a.title)}">✏ 編集</a>
-          </div>
-        </article>
-      `).join("");
-    }
-
-    checkAuth();
-    loadArticles();
   </script>
 </body>
 </html>
