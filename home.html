@@ -1,22 +1,9 @@
-<!-- home.html内の該当箇所 -->
 <script type="module">
   console.log("✅ home.html 読み込み開始");
 
-  import { supabase } from "./js/api.js";
-
-  const { data, error } = await supabase.auth.getSession();
-  console.log("🧠 セッション:", data, error);
-
-  if (!data.session) {
-    console.log("🚪 未ログイン → index.htmlへ");
-    window.location.href = "index.html";
-  } else {
-    console.log("👤 ログイン済み:", data.session.user.email);
-  }
-</script>
-
   import { supabase, requireAuth } from "./js/api.js";
 
+  // 🔒 ログインチェック
   await requireAuth();
 
   const list = document.getElementById("articles");
@@ -47,7 +34,7 @@
 
   // ✍️ 新規記事ボタン
   document.getElementById("newBtn").addEventListener("click", () => {
-    window.location.href = "new.html"; // ✅ 修正！
+    window.location.href = "new.html";
   });
 
   // 🚪 ログアウト
