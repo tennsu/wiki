@@ -1,57 +1,55 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>記事編集</title>
   <script src="https://cdn.tiny.cloud/1/tj631xvvm36oh9q1fud6srms54cpa8yj5mlxxrofrao7qdhl/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
   <style>
-    body { background:#f3f5f7; text-align:center; font-family:sans-serif; padding:30px; }
-    textarea { width:90%; height:400px; }
+    body {
+      background: #f3f5f7;
+      text-align: center;
+      font-family: sans-serif;
+      padding: 30px;
+    }
+    input[type="text"] {
+      width: 70%;
+      padding: 10px;
+      font-size: 18px;
+    }
+    textarea {
+      width: 90%;
+      height: 400px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #preview {
+      display: none;
+      background: white;
+      margin: 30px auto;
+      width: 80%;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: left;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
   <h1>記事編集</h1>
-  <input id="title" placeholder="タイトルを入力" style="width:70%;padding:10px;"><br><br>
+
+  <input type="text" id="title" placeholder="タイトルを入力"><br><br>
   <textarea id="editor"></textarea><br>
+
   <button id="saveBtn">💾 保存</button>
   <button id="previewBtn">👁 プレビュー</button>
 
-  <div id="previewArea" style="display:none; background:white; margin:30px auto; width:80%; padding:20px; border-radius:8px; text-align:left;"></div>
+  <div id="preview"></div>
 
-  <!-- ✅ TinyMCE初期化は通常スクリプトで -->
-  <script>
-    tinymce.init({
-      selector: '#editor',
-      height: 500,
-      menubar: true,
-      plugins: 'link image code lists table',
-      toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image | code',
-      branding: false
-    });
-  </script>
-
-  <!-- ✅ Supabase保存などはモジュールで -->
-  <script type="module">
-    import { supabase } from "./js/api.js";
-
-    document.getElementById("saveBtn").addEventListener("click", async () => {
-      const title = document.getElementById("title").value.trim() || "無題";
-      const content = tinymce.activeEditor.getContent();
-
-      const { error } = await supabase.from("articles").insert([{ title, content }]);
-      if (error) alert("❌ 保存失敗: " + error.message);
-      else {
-        alert("✅ 保存しました！");
-        window.location.href = "home.html";
-      }
-    });
-
-    document.getElementById("previewBtn").addEventListener("click", () => {
-      const html = tinymce.activeEditor.getContent();
-      const preview = document.getElementById("previewArea");
-      preview.innerHTML = html;
-      preview.style.display = "block";
-    });
-  </script>
+  <!-- 自作モジュールJSの読み込み（APIと連携） -->
+  <script type="module" src="./js/editor.js"></script>
 </body>
 </html>
